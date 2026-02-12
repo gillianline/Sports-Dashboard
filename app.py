@@ -137,6 +137,6 @@ with tab_team:
     avg_metrics = df_phys.groupby('Position')[metrics_list].mean().round(1).reset_index()
     
     # Injecting the same custom table class
-    st.markdown(f'<div class="vibe-table">{avg_metrics.to_html(index=False, border=0)}</div>', unsafe_allow_html=True)der("Position Averages")
+    st.markdown(f'<div class="vibe-table">{avg_metrics.to_html(index=False, border=0)}</div>', unsafe_allow_html=True)
     avg_metrics = df_phys.groupby('Position')[metrics_list].mean().round(1).reset_index()
     st.dataframe(avg_metrics, use_container_width=True, hide_index=True)
