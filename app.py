@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import random
-from streamlit_autorefresh import st_autorefresh
 
 # -------------------
 # PAGE CONFIG (Must be first)
