@@ -2,6 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import random
+from streamlit_autorefresh import st_autorefresh
+
+# -------------------
+# AUTO REFRESH EVERY 10 SECONDS
+# -------------------
+st_autorefresh(interval=10000, key="data_refresh")
+
 # -------------------
 # HELPER FUNCTIONS
 # -------------------
@@ -81,13 +88,12 @@ with tab_indiv:
         """, unsafe_allow_html=True)
 
     # -------------------
-    # RECENT PERFORMANCE WITH ARROWS
+    # RECENT PERFORMANCE WITH COLORED ARROWS
     # -------------------
     st.subheader("Recent Performance")
     metrics_list = ['Max_Speed','Vertical','Bench','Squat']
     recent = p_history.tail(5).copy()
     
-    # Logic to build the display strings with arrows
     for m in metrics_list:
         vals = recent[m].values
         new_col = []
@@ -95,7 +101,12 @@ with tab_indiv:
             if i == 0:
                 new_col.append(f"{vals[i]} –")
             else:
-                arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
+                if vals[i] > vals[i-1]:
+                    arrow = "<span style='color:#00ff88'>↑</span>"
+                elif vals[i] < vals[i-1]:
+                    arrow = "<span style='color:#ff4b4b'>↓</span>"
+                else:
+                    arrow = "–"
                 new_col.append(f"{vals[i]} {arrow}")
         recent[m] = new_col
 
