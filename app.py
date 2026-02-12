@@ -9,8 +9,7 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 # --------------------------------------------------
 # GOOGLE SHEET
 # --------------------------------------------------
-sheet_url = "https://drive.google.com/file/d/1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5/view?usp=sharing
-"
+sheet_url = "https://drive.google.com/file/d/1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5/view?usp=sharing"
 
 @st.cache_data(ttl=10)
 def load_data():
