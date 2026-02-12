@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import requests
 # -------------------
 # HELPER FUNCTIONS
 # -------------------
@@ -11,42 +10,19 @@ def inches_to_feet(inches):
         return f"{int(val // 12)}'{int(val % 12)}\""
     except: return str(inches)
 
-def load_image_from_url(url):
-    """Aggressively fetches image bytes, bypassing Google Drive's virus scan warning."""
+def get_drive_image(url):
+    """Converts Drive links to a format that bypasses security blocks."""
     if pd.isna(url) or "drive.google.com" not in str(url):
         return "https://via.placeholder.com/250x350/0d1117/3880ff?text=PHOTO+MISSING"
-    
     try:
-        # Extract ID
-        if "id=" in url:
-            file_id = url.split("id=")[1].split("&")[0]
-        elif "/d/" in url:
-            file_id = url.split("/d/")[1].split("/")[0]
-        else:
-            return url
-
-        direct_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        
-        # Use a session to handle cookies (bypasses the 'confirm virus scan' page)
-        session = requests.Session()
-        response = session.get(direct_url, stream=True, timeout=10)
-        
-        # Check for Google's 'confirm' token in cookies
-        confirm_token = None
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                confirm_token = value
-                break
-        
-        if confirm_token:
-            confirm_url = direct_url + f"&confirm={confirm_token}"
-            response = session.get(confirm_url, stream=True)
-            
-        if response.status_code == 200:
-            return response.content
-        return "https://via.placeholder.com/250x350/0d1117/3880ff?text=ACCESS+DENIED"
-    except Exception as e:
-        return "https://via.placeholder.com/250x350/0d1117/3880ff?text=LOAD+ERROR"
+        if "id=" in str(url):
+            file_id = str(url).split("id=")[1].split("&")[0]
+        elif "/d/" in str(url):
+            file_id = str(url).split("/d/")[1].split("/")[0]
+        else: return url
+        # Thumbnail endpoint is highly reliable for bypassing virus scan pages
+        return f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
+    except: return url
 
 # -------------------
 # DATA ENGINE
@@ -105,6 +81,10 @@ selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique
 p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
 latest = p_history.iloc[-1]
 
+# FIND THE MOST RECENT NON-EMPTY IMAGE
+valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
+current_img_url = valid_images.iloc[-1]['Image_URL'] if not valid_images.empty else ""
+
 tab_indiv, tab_team = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE"])
 
 with tab_indiv:
@@ -112,8 +92,7 @@ with tab_indiv:
     col_img, col_info = st.columns([1,3])
     
     with col_img:
-        img_bytes = load_image_from_url(latest.get('Image_URL', ""))
-        st.image(img_bytes, width=250)
+        st.image(get_drive_image(current_img_url), width=250)
 
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
