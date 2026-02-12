@@ -2,12 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import random
-from streamlit_autorefresh import st_autorefresh
-
-# -------------------
-# AUTO REFRESH EVERY 10 SECONDS
-# -------------------
-st_autorefresh(interval=10000, key="data_refresh")
 
 # -------------------
 # HELPER FUNCTIONS
