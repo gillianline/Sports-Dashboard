@@ -9,12 +9,13 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 # --------------------------------------------------
 # GOOGLE SHEET
 # --------------------------------------------------
-file_id = "1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5"
-sheet_url = f"https://docs.google.com/uc?export=download&id={file_id}&format=csv"
+sheet_id = "1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5"
+sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
 @st.cache_data(ttl=10)
 def load_data():
-    df = pd.read_csv(sheet_url)
+    # Adding encoding="utf-8" to be safe
+    df = pd.read_csv(sheet_url, encoding="utf-8")
     df.columns = df.columns.str.strip()
 
     if "Date" in df.columns:
