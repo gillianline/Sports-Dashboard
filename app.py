@@ -1,153 +1,211 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+import random
+from streamlit_autorefresh import st_autorefresh
 
-# --------------------------------------------------
-# PAGE CONFIG & CUSTOM STYLING
-# --------------------------------------------------
+# -------------------
+# PAGE CONFIG (Must be first)
+# -------------------
 st.set_page_config(page_title="Performance Console", layout="wide")
 
-# Add some custom CSS for that "Console" look
-st.markdown("""
-    <style>
-    .main {
-        background-color: #f5f7f9;
-    }
-    [data-testid="stMetricValue"] {
-        font-size: 28px;
-        color: #007BFF;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        font-weight: bold;
-        font-size: 16px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+# -------------------
+# AUTO REFRESH EVERY 10 SECONDS
+# -------------------
+st_autorefresh(interval=10000, key="data_refresh")
 
-# --------------------------------------------------
-# DATA ENGINE (The Fix)
-# --------------------------------------------------
+# -------------------
+# HELPER FUNCTIONS
+# -------------------
+def inches_to_feet(inches):
+    """Convert inches to feet/inches string"""
+    try:
+        if pd.isna(inches) or inches == "":
+            return "N/A"
+        val = float(inches)
+        feet = int(val // 12)
+        remaining = int(val % 12)
+        return f"{feet}'{remaining}\""
+    except:
+        return str(inches)
+
+# -------------------
+# DATA ENGINE (Google Sheets Fix)
+# -------------------
 sheet_id = "1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5"
 sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
 @st.cache_data(ttl=10)
 def load_data():
     try:
-        # We use storage_options and a specific encoding to prevent the Unicode error
-        df = pd.read_csv(sheet_url, encoding="utf-8")
+        df = pd.read_csv(sheet_url)
         df.columns = df.columns.str.strip()
-        if "Date" in df.columns:
-            df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        if 'Date' in df.columns:
+            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        # We process the height for display but keep numeric for logic if needed
         return df
     except Exception as e:
-        st.error(f"Connection Error: {e}")
+        st.error(f"Error loading data: {e}")
         return pd.DataFrame()
 
-df = load_data()
+df_phys = load_data()
 
-if df.empty:
-    st.warning("No data found. Please check your Google Sheet sharing settings (Anyone with the link can view).")
+if df_phys.empty:
+    st.warning("No data found. Ensure the Google Sheet is shared as 'Anyone with the link can view'.")
     st.stop()
 
-metrics = ["Max_Speed", "Vertical", "Bench", "Squat"]
+# -------------------
+# CUSTOM CSS STYLING
+# -------------------
+st.markdown("""
+<style>
+.stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
+/* Player Card Styling */
+.player-info { 
+    background: linear-gradient(90deg, #161b22 0%, #1b1f27 100%); 
+    padding: 30px; 
+    border-radius: 20px; 
+    border-left: 8px solid #3880ff; 
+    margin-bottom: 25px; 
+}
+.player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; line-height:1; }
+.player-meta { font-size: 1.1rem; opacity: 0.8; margin: 10px 0 20px 0; color: #d0d0d0; }
+/* Metric Box Styling */
+.metrics-container { display: flex; gap: 15px; flex-wrap: wrap; }
+.metric-box { 
+    background: #0d1117; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    padding: 15px; 
+    border-radius: 12px; 
+    text-align: center; 
+    min-width: 140px;
+    flex: 1;
+}
+.m-label { color: #3880ff; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom:5px; font-weight: bold;}
+.m-value { font-size: 1.8rem; font-weight: 700; color: #ffffff; margin: 0; }
+.m-sub { font-size: 0.7rem; color: #888; margin-top: 5px; }
+/* Table Styling */
+table { width: 100%; border-collapse: collapse; color: white; background: #161b22; border-radius: 10px; overflow: hidden; }
+th { background: #1b1f27; color: #3880ff; padding: 12px; text-align: center; border-bottom: 2px solid #0d1117; }
+td { padding: 12px; text-align: center; border-bottom: 1px solid #21262d; }
+.highlight { color: #00d4ff; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
 
-# --------------------------------------------------
-# SIDEBAR / FILTERS
-# --------------------------------------------------
-with st.sidebar:
-    st.header("Console Controls")
-    selected_player = st.selectbox("Select Athlete", df["Player"].unique())
-    st.divider()
-    st.info("Data auto-refreshes every 10 seconds.")
+# -------------------
+# DASHBOARD HEADER
+# -------------------
+st.markdown("<h1 style='letter-spacing:-2px; color:white; margin-bottom:0;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color:#3880ff; margin-top:0;'>Live Athlete Analytics Engine</p>", unsafe_allow_html=True)
 
-# Logic for selection
-p_history = df[df["Player"] == selected_player].sort_values("Date")
+# -------------------
+# PLAYER SELECTION
+# -------------------
+all_players = sorted(df_phys['Player'].unique())
+selected_player = st.selectbox("Search Athlete", all_players)
+
+# Filter Data
+p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
 latest = p_history.iloc[-1]
 
-# --------------------------------------------------
-# MAIN HEADER
-# --------------------------------------------------
-st.title("⚡ Performance Console")
-st.caption(f"Last updated data for: {selected_player}")
-st.divider()
+tab_indiv, tab_team = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE"])
 
-tab1, tab2 = st.tabs(["👤 Individual Profile", "📊 Team Performance"])
+# -------------------
+# INDIVIDUAL PROFILE
+# -------------------
+with tab_indiv:
+    col_img, col_info = st.columns([1,3], gap="large")
+    
+    with col_img:
+        # Check for image URL in sheet, otherwise use placeholder
+        img_url = latest.get('Image_URL', "https://via.placeholder.com/250x350/161b22/3880ff?text=ATHLETE+PHOTO")
+        if pd.isna(img_url) or img_url == "":
+            img_url = "https://via.placeholder.com/250x350/161b22/3880ff?text=PHOTO+MISSING"
+        st.image(img_url, use_container_width=True)
 
-# ==================================================
-# TAB 1: INDIVIDUAL PROFILE
-# ==================================================
-with tab1:
-    col1, col2 = st.columns([1, 2], gap="large")
-
-    with col1:
-        if "Image_URL" in df.columns:
-            image_url = latest.get("Image_URL", "")
-            if pd.notna(image_url) and image_url != "":
-                st.image(image_url, use_container_width=True, caption=selected_player)
-            else:
-                st.image("https://via.placeholder.com/300x400?text=No+Photo", use_container_width=True)
-
-    with col2:
-        st.subheader(f"Athlete Bio: {selected_player}")
+    with col_info:
+        # Convert height for display
+        display_height = inches_to_feet(latest.get('Height', 0))
         
-        # Grid for Bio Info
-        b1, b2, b3 = st.columns(3)
-        b1.write(f"**Pos:** {latest.get('Position','')}")
-        b1.write(f"**Ht:** {latest.get('Height','')}")
-        b2.write(f"**Wt:** {latest.get('Weight','')}")
-        b2.write(f"**BF%:** {latest.get('Body_Fat','')}")
-        b3.write(f"**Wingspan:** {latest.get('Wingspan','')}")
+        # Player Bio Card
+        st.markdown(f"""
+        <div class="player-info">
+            <p class="player-name">{selected_player.upper()}</p>
+            <p class="player-meta">
+                {latest.get('Position','N/A')} &nbsp;|&nbsp; 
+                HT: {display_height} &nbsp;|&nbsp; 
+                WT: {latest.get('Weight','N/A')} LBS &nbsp;|&nbsp; 
+                BF: {latest.get('Body_Fat','N/A')}% &nbsp;|&nbsp; 
+                WINGSPAN: {latest.get('Wingspan','N/A')}"
+            </p>
+            <div class="metrics-container">
+                <div class="metric-box">
+                    <p class="m-label">Max Speed</p>
+                    <p class="m-value">{latest.get('Max_Speed', 0)}</p>
+                    <p class="m-sub">Top {int((latest['Max_Speed']/df_phys['Max_Speed'].max())*100) if df_phys['Max_Speed'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">Vertical</p>
+                    <p class="m-value">{latest.get('Vertical', 0)}"</p>
+                    <p class="m-sub">Top {int((latest['Vertical']/df_phys['Vertical'].max())*100) if df_phys['Vertical'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">Bench</p>
+                    <p class="m-value">{latest.get('Bench', 0)}</p>
+                    <p class="m-sub">Top {int((latest['Bench']/df_phys['Bench'].max())*100) if df_phys['Bench'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">Squat</p>
+                    <p class="m-value">{latest.get('Squat', 0)}</p>
+                    <p class="m-sub">Top {int((latest['Squat']/df_phys['Squat'].max())*100) if df_phys['Squat'].max() > 0 else 0}%</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("### Key Metrics")
-        m_cols = st.columns(len(metrics))
-
-        for i, metric in enumerate(metrics):
-            if metric in df.columns:
-                max_val = df[metric].max()
-                # Calculate percentile (safety check for div by zero)
-                percentile = int((latest[metric] / max_val) * 100) if max_val > 0 else 0
-                
-                m_cols[i].metric(
-                    label=metric.replace("_", " "),
-                    value=latest[metric],
-                    delta=f"Top {percentile}%",
-                    delta_color="normal"
-                )
-
-    st.divider()
-    st.subheader("📈 Performance Trend")
+    # Recent Performance with Trends
+    st.subheader("Recent Performance")
+    metrics_list = ['Max_Speed','Vertical','Bench','Squat']
     recent = p_history.tail(5).copy()
-    if "Date" in recent.columns:
-        recent["Date"] = recent["Date"].dt.strftime("%Y-%m-%d")
-    
-    st.dataframe(recent[["Date"] + metrics], use_container_width=True, hide_index=True)
+    recent['Date'] = recent['Date'].dt.strftime('%Y-%m-%d')
 
-# ==================================================
-# TAB 2: TEAM PERFORMANCE
-# ==================================================
-with tab2:
-    st.subheader("🏆 Leaderboard (Top 5)")
-    
-    l_cols = st.columns(2)
-    for i, metric in enumerate(metrics):
-        target_col = l_cols[i % 2] # Split into two columns
-        if metric in df.columns:
-            with target_col:
-                st.write(f"**{metric.replace('_',' ')}**")
-                top5 = (
-                    df.groupby("Player")[metric]
-                    .max()
-                    .sort_values(ascending=False)
-                    .head(5)
-                    .reset_index()
-                )
-                st.dataframe(top5, use_container_width=True, hide_index=True)
+    # Calculate Trends
+    for m in metrics_list:
+        recent[f"{m}_Trend"] = "–"
+        vals = recent[m].values
+        for i in range(1, len(vals)):
+            if vals[i] > vals[i-1]:
+                recent.iloc[i, recent.columns.get_loc(f"{m}_Trend")] = "<span style='color:#00ff88'>↑</span>"
+            elif vals[i] < vals[i-1]:
+                recent.iloc[i, recent.columns.get_loc(f"{m}_Trend")] = "<span style='color:#ff4b4b'>↓</span>"
 
-    st.divider()
-    st.subheader("📋 Positional Averages")
-    avg_metrics = df.groupby("Position")[metrics].mean().round(1).reset_index()
-    st.table(avg_metrics) # Using table for a cleaner static look
+    # Merge value and trend for display
+    display_df = recent[['Date']].copy()
+    for m in metrics_list:
+        display_df[m.replace('_', ' ')] = recent[m].astype(str) + " " + recent[f"{m}_Trend"]
+
+    st.markdown(display_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+# -------------------
+# TEAM PERFORMANCE
+# -------------------
+with tab_team:
+    st.subheader("Team Leaderboard")
+    
+    # Leaderboard grid
+    l_col1, l_col2 = st.columns(2)
+    
+    for i, m in enumerate(metrics_list):
+        target_col = l_col1 if i % 2 == 0 else l_col2
+        with target_col:
+            st.markdown(f"<p style='color:#3880ff; font-weight:bold; margin-bottom:5px;'>TOP 5: {m.replace('_',' ')}</p>", unsafe_allow_html=True)
+            top5 = df_phys.groupby('Player')[m].max().sort_values(ascending=False).head(5).reset_index()
+            # Highlight #1
+            top5[m] = top5[m].astype(str)
+            top5.iloc[0, 1] = f"<span class='highlight'>{top5.iloc[0,1]} ⭐</span>"
+            st.markdown(top5.to_html(escape=False, index=False), unsafe_allow_html=True)
+            st.write("")
+
+    st.subheader("Position Averages")
+    avg_metrics = df_phys.groupby('Position')[metrics_list].mean().round(1).reset_index()
+    st.dataframe(avg_metrics, use_container_width=True, hide_index=True)
