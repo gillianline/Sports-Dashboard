@@ -2,12 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import random
-from streamlit_autorefresh import st_autorefresh
-
-# -------------------
-# AUTO REFRESH EVERY 10 SECONDS
-# -------------------
-st_autorefresh(interval=10000, key="data_refresh")  # 10 seconds
 
 # -------------------
 # HELPER FUNCTIONS
@@ -26,8 +20,9 @@ def inches_to_feet(inches):
 # Replace YOUR_SHEET_ID with your Google Sheet ID
 sheet_url = "https://docs.google.com/spreadsheets/d/1I3SX2Cmo8jB6YiJAhrzWOunaNHUq0QT5/edit?usp=sharing&ouid=107856439302599552529&rtpof=true&sd=true"
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=30)
 def load_data():
+    st.cache_data(ttl=30)
     df = pd.read_csv(sheet_url)
     df.columns = df.columns.str.strip()
     if 'Date' in df.columns:
