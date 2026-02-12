@@ -4,16 +4,6 @@ import plotly.graph_objects as go
 import random
 
 # -------------------
-# PAGE CONFIG (Must be first)
-# -------------------
-st.set_page_config(page_title="Performance Console", layout="wide")
-
-# -------------------
-# AUTO REFRESH EVERY 10 SECONDS
-# -------------------
-st_autorefresh(interval=10000, key="data_refresh")
-
-# -------------------
 # HELPER FUNCTIONS
 # -------------------
 def inches_to_feet(inches):
