@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+
 # -------------------
 # HELPER FUNCTIONS
 # -------------------
@@ -11,7 +12,6 @@ def inches_to_feet(inches):
     except: return str(inches)
 
 def get_drive_image(url):
-    """Converts Drive links to a format that bypasses security blocks."""
     if pd.isna(url) or "drive.google.com" not in str(url):
         return "https://via.placeholder.com/250x350/0d1117/3880ff?text=PHOTO+MISSING"
     try:
@@ -20,7 +20,6 @@ def get_drive_image(url):
         elif "/d/" in str(url):
             file_id = str(url).split("/d/")[1].split("/")[0]
         else: return url
-        # Thumbnail endpoint is highly reliable for bypassing virus scan pages
         return f"https://drive.google.com/thumbnail?id={file_id}&sz=w1000"
     except: return url
 
@@ -46,7 +45,7 @@ df_phys = load_data()
 if df_phys.empty: st.stop()
 
 # -------------------
-# PAGE CONFIG & CSS (Centered + Dark Vibes)
+# PAGE CONFIG & CSS
 # -------------------
 st.set_page_config(page_title="Performance Console", layout="wide")
 st.markdown("""
@@ -79,7 +78,15 @@ st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_
 # -------------------
 selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()))
 p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
+
+# Latest row for Bio (Weight/Position)
 latest = p_history.iloc[-1]
+
+# PERSONAL BESTS for the Metric Boxes
+pb_speed = p_history['Max_Speed'].max()
+pb_vert = p_history['Vertical'].max()
+pb_bench = p_history['Bench'].max()
+pb_squat = p_history['Squat'].max()
 
 # FIND THE MOST RECENT NON-EMPTY IMAGE
 valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
@@ -101,16 +108,32 @@ with tab_indiv:
             <p class="player-name">{selected_player}</p>
             <p class="player-meta">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight','')} LBS</p>
             <div class="metrics">
-                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{latest.get('Max_Speed',0)}</p></div>
-                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{latest.get('Vertical',0)}"</p></div>
-                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{latest.get('Bench',0)}</p></div>
-                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{latest.get('Squat',0)}</p></div>
+                <div class="metric-box">
+                    <p class="m-label">All-Time Max Speed</p>
+                    <p class="m-value">{pb_speed}</p>
+                    <p class="m-sub">Team Rank: {int((pb_speed/df_phys['Max_Speed'].max())*100) if df_phys['Max_Speed'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">All-Time Vertical</p>
+                    <p class="m-value">{pb_vert}"</p>
+                    <p class="m-sub">Team Rank: {int((pb_vert/df_phys['Vertical'].max())*100) if df_phys['Vertical'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">All-Time Bench</p>
+                    <p class="m-value">{pb_bench}</p>
+                    <p class="m-sub">Team Rank: {int((pb_bench/df_phys['Bench'].max())*100) if df_phys['Bench'].max() > 0 else 0}%</p>
+                </div>
+                <div class="metric-box">
+                    <p class="m-label">All-Time Squat</p>
+                    <p class="m-value">{pb_squat}</p>
+                    <p class="m-sub">Team Rank: {int((pb_squat/df_phys['Squat'].max())*100) if df_phys['Squat'].max() > 0 else 0}%</p>
+                </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
     # RECENT PERFORMANCE
-    st.subheader("Evaluation History")
+    st.subheader("Evaluation History (Last 5 Sessions)")
     metrics_list = ['Max_Speed','Vertical','Bench','Squat']
     recent = p_history.tail(5).copy()
     for m in metrics_list:
