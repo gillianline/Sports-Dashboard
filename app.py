@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-
 # -------------------
 # HELPER FUNCTIONS
 # -------------------
@@ -78,15 +77,22 @@ st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_
 # -------------------
 selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()))
 p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
-
-# Latest row for Bio (Weight/Position)
 latest = p_history.iloc[-1]
 
-# PERSONAL BESTS for the Metric Boxes
-pb_speed = p_history['Max_Speed'].max()
-pb_vert = p_history['Vertical'].max()
-pb_bench = p_history['Bench'].max()
-pb_squat = p_history['Squat'].max()
+# -------------------
+# RANKING LOGIC
+# -------------------
+metrics_list = ['Max_Speed', 'Vertical', 'Bench', 'Squat']
+
+# 1. Create a table of every player's Personal Best
+team_pbs = df_phys.groupby('Player')[metrics_list].max()
+
+# 2. Get Ranks (method='min' means if two people tie for 1st, the next person is 3rd)
+team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
+
+# 3. Pull this specific player's PBs and Ranks
+player_pbs = team_pbs.loc[selected_player]
+player_ranks = team_ranks.loc[selected_player]
 
 # FIND THE MOST RECENT NON-EMPTY IMAGE
 valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
@@ -110,23 +116,23 @@ with tab_indiv:
             <div class="metrics">
                 <div class="metric-box">
                     <p class="m-label">All-Time Max Speed</p>
-                    <p class="m-value">{pb_speed}</p>
-                    <p class="m-sub">Team Rank: {int((pb_speed/df_phys['Max_Speed'].max())*100) if df_phys['Max_Speed'].max() > 0 else 0}%</p>
+                    <p class="m-value">{player_pbs['Max_Speed']}</p>
+                    <p class="m-sub">Ranked #{player_ranks['Max_Speed']} on Team</p>
                 </div>
                 <div class="metric-box">
                     <p class="m-label">All-Time Vertical</p>
-                    <p class="m-value">{pb_vert}"</p>
-                    <p class="m-sub">Team Rank: {int((pb_vert/df_phys['Vertical'].max())*100) if df_phys['Vertical'].max() > 0 else 0}%</p>
+                    <p class="m-value">{player_pbs['Vertical']}"</p>
+                    <p class="m-sub">Ranked #{player_ranks['Vertical']} on Team</p>
                 </div>
                 <div class="metric-box">
                     <p class="m-label">All-Time Bench</p>
-                    <p class="m-value">{pb_bench}</p>
-                    <p class="m-sub">Team Rank: {int((pb_bench/df_phys['Bench'].max())*100) if df_phys['Bench'].max() > 0 else 0}%</p>
+                    <p class="m-value">{player_pbs['Bench']}</p>
+                    <p class="m-sub">Ranked #{player_ranks['Bench']} on Team</p>
                 </div>
                 <div class="metric-box">
                     <p class="m-label">All-Time Squat</p>
-                    <p class="m-value">{pb_squat}</p>
-                    <p class="m-sub">Team Rank: {int((pb_squat/df_phys['Squat'].max())*100) if df_phys['Squat'].max() > 0 else 0}%</p>
+                    <p class="m-value">{player_pbs['Squat']}</p>
+                    <p class="m-sub">Ranked #{player_ranks['Squat']} on Team</p>
                 </div>
             </div>
         </div>
@@ -134,7 +140,6 @@ with tab_indiv:
 
     # RECENT PERFORMANCE
     st.subheader("Evaluation History (Last 5 Sessions)")
-    metrics_list = ['Max_Speed','Vertical','Bench','Squat']
     recent = p_history.tail(5).copy()
     for m in metrics_list:
         vals = recent[m].values
