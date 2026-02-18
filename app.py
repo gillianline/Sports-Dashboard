@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 # -------------------
 # HELPER FUNCTIONS
@@ -34,7 +35,6 @@ def load_data():
     try:
         df = pd.read_csv(sheet_url)
         df.columns = df.columns.str.strip()
-        # Clean numeric columns to handle decimals/NaNs
         for col in ['Max_Speed', 'Vertical', 'Bench', 'Squat']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -57,7 +57,7 @@ st.markdown("""
 <style>
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
-.stSelectbox label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 *:focus, *:active, .stSelectbox:focus-within, div[data-baseweb="select"] {
@@ -83,7 +83,7 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
 
 # -------------------
-# TAB SELECTION
+# MAIN TABS
 # -------------------
 tab_indiv, tab_team = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE"])
 metrics_list = ['Max_Speed', 'Vertical', 'Bench', 'Squat']
@@ -93,13 +93,11 @@ with tab_indiv:
     p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
     latest = p_history.iloc[-1]
 
-    # Team Rankings Calculation
     team_pbs = df_phys.groupby('Player')[metrics_list].max()
     team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
     player_pbs = team_pbs.loc[selected_player]
     player_ranks = team_ranks.loc[selected_player]
 
-    # Convert Bench/Squat to int for display
     b_val = int(player_pbs['Bench']) if pd.notna(player_pbs['Bench']) else 0
     s_val = int(player_pbs['Squat']) if pd.notna(player_pbs['Squat']) else 0
 
@@ -132,11 +130,8 @@ with tab_indiv:
         vals = recent[m].values
         new_col = []
         for i in range(len(vals)):
-            # Clean display for Bench/Squat in history table
             curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
-            
-            if i == 0: 
-                new_col.append(f"{curr_display} –")
+            if i == 0: new_col.append(f"{curr_display} –")
             else:
                 color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
@@ -146,37 +141,49 @@ with tab_indiv:
     st.markdown(f'<div style="text-align:center;">{recent[["Date"] + metrics_list].to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
-    pos_list = sorted(df_phys['Position'].dropna().unique())
-    selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list)
+    # --- FILTERS ---
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        pos_list = sorted(df_phys['Position'].dropna().unique())
+        selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list)
+    
+    with col_f2:
+        # Date Range Filter
+        min_date = df_phys['Date'].min().to_pydatetime()
+        max_date = df_phys['Date'].max().to_pydatetime()
+        date_range = st.slider("Filter Date Range", 
+                               min_value=min_date, 
+                               max_value=max_date, 
+                               value=(min_date, max_date),
+                               format="MMM DD, YYYY")
 
-    all_player_pbs = df_phys.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
+    # --- FILTER LOGIC ---
+    mask = (df_phys['Date'] >= date_range[0]) & (df_phys['Date'] <= date_range[1])
+    filtered_df = df_phys.loc[mask]
 
-    if selected_pos == "All Positions":
-        display_df = all_player_pbs
-    else:
-        display_df = all_player_pbs[all_player_pbs['Position'] == selected_pos]
+    # Calculate Personal Bests within the selected date range
+    range_pbs = filtered_df.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
 
-    st.subheader(f"Top 5 Leaderboard: {selected_pos}")
+    if selected_pos != "All Positions":
+        range_pbs = range_pbs[range_pbs['Position'] == selected_pos]
+
+    # --- TOP 5 LEADERBOARD ---
+    st.subheader(f"Leaderboard ({date_range[0].strftime('%b %d')} - {date_range[1].strftime('%b %d')})")
     t_col1, t_col2 = st.columns(2)
     for i, m in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
             st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{m.replace('_',' ')}</b></p>", unsafe_allow_html=True)
-            top5 = display_df[['Player', m]].sort_values(m, ascending=False).head(5).copy()
-            # Remove decimals from Leaderboard for Bench/Squat
+            top5 = range_pbs[['Player', m]].sort_values(m, ascending=False).head(5).copy()
             if m in ['Bench', 'Squat']:
                 top5[m] = top5[m].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    st.subheader(f"Position Averages (Based on Personal Bests)")
-    avg_data = all_player_pbs.groupby('Position')[metrics_list].mean().reset_index()
-    
-    # Custom rounding: 1 decimal for speed/vert, 0 for bench/squat
+    # --- AVERAGES ---
+    st.subheader("Team Averages (PB based)")
+    avg_data = range_pbs.groupby('Position')[metrics_list].mean().reset_index()
     avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
     avg_data['Vertical'] = avg_data['Vertical'].round(1)
-    avg_data['Bench'] = avg_data['Bench'].round(0).astype(int)
-    avg_data['Squat'] = avg_data['Squat'].round(0).astype(int)
+    avg_data['Bench'] = avg_data['Bench'].round(0).fillna(0).astype(int)
+    avg_data['Squat'] = avg_data['Squat'].round(0).fillna(0).astype(int)
     
-    if selected_pos != "All Positions":
-        avg_data = avg_data[avg_data['Position'] == selected_pos]
-
     st.markdown(f"<div style='text-align:center'>{avg_data.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
