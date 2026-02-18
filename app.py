@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 
 # -------------------
@@ -66,35 +67,27 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 
 st.markdown("""
 <style>
-/* Global App Background */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; padding-top: 10px; }
 
-/* STRICT TAB CENTERING */
+/* TABS CENTERED */
 div[data-baseweb="tabs"] { display: flex !important; justify-content: center !important; }
 div[role="tablist"] { display: flex !important; justify-content: center !important; width: 100% !important; }
 button[data-baseweb="tab"] { padding: 10px 40px !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1.1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom: 3px solid #3880ff !important; }
 
-/* DROPDOWN STYLING: Forced Light Background/Dark Text for Readability */
+/* DROPDOWN STYLING */
 div[data-baseweb="select"] { background-color: white !important; border-radius: 8px !important; }
 div[data-baseweb="select"] div { color: #0d1117 !important; }
 input[data-baseweb="input"] { color: #0d1117 !important; }
-div[role="listbox"] { background-color: white !important; }
-div[role="option"] { color: #0d1117 !important; background-color: white !important; }
-div[role="option"]:hover { background-color: #3880ff !important; color: white !important; }
 
-/* Labels & Search Headers */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; text-align: center !important; }
-
-/* Metric Boxes */
-.metric-box { background: #161b22; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; }
-.m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
+/* COMPONENT BOXES */
+.metric-box { background: #161b22; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; }
+.m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; }
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
-.m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
 
-/* Table Styling */
+/* TABLE STYLING */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -103,9 +96,6 @@ div[role="option"]:hover { background-color: #3880ff !important; color: white !i
 
 st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
 
-# -------------------
-# MAIN TABS (CENTERED)
-# -------------------
 tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL", "TEAM", "HEAD TO HEAD"])
 
 # --- INDIVIDUAL PROFILE ---
@@ -127,6 +117,7 @@ with tab_indiv:
         current_img_url = img_df.iloc[-1]['Image_URL'] if not img_df.empty else ""
         st.image(get_drive_image(current_img_url), use_container_width=True)
         st.markdown(f'<div class="metric-box" style="margin-top:10px; border: 2px solid #3880ff;"><p class="m-label">Athleticism Score</p><p class="m-value">{p_data["Ath_Score"]}</p></div>', unsafe_allow_html=True)
+        
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
         st.markdown(f"""
@@ -134,44 +125,24 @@ with tab_indiv:
             <p style="font-size: 2.5rem; font-weight: 800; margin: 0; color: white;">{selected_player}</p>
             <p style="font-size: 1.1rem; color: #a0a0a0; margin-bottom:20px;">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight', 'N/A')} LBS</p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{p_data['Max_Speed']}</p><p class="m-sub">Rank #{p_rank_row['Max_Speed']}</p></div>
-                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{p_data['Vertical']}"</p><p class="m-sub">Rank #{p_rank_row['Vertical']}</p></div>
-                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{int(p_data['Bench'])}</p><p class="m-sub">Rank #{p_rank_row['Bench']}</p></div>
-                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{int(p_data['Squat'])}</p><p class="m-sub">Rank #{p_rank_row['Squat']}</p></div>
+                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{p_data['Max_Speed']}</p></div>
+                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{p_data['Vertical']}"</p></div>
+                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{int(p_data['Bench'])}</p></div>
+                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{int(p_data['Squat'])}</p></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
     with col_radar:
-        categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
-        fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(r=p_pct_row.values, theta=categories, fill='toself', name=selected_player, line_color='#3880ff'))
+        fig = go.Figure(go.Scatterpolar(r=p_pct_row.values, theta=['Speed', 'Vert', 'Bench', 'Squat'], fill='toself', line_color='#3880ff'))
         fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-                         showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=50))
+                         paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=50, b=50))
         st.plotly_chart(fig, use_container_width=True)
-
-    st.subheader("Recent Evaluation History")
-    recent = p_history.tail(5).copy()
-    for m in metrics_list:
-        vals = recent[m].values
-        new_col = []
-        for i in range(len(vals)):
-            curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
-            if i == 0: new_col.append(f"{curr_display} –")
-            else:
-                color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
-                arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
-                new_col.append(f"{curr_display} <span style='color:{color}'>{arrow}</span>")
-        recent[m] = new_col
-    recent_display = recent[["Date"] + metrics_list].rename(columns={'Max_Speed': 'Max Speed'})
-    recent_display['Date'] = recent_display['Date'].dt.strftime('%Y-%m-%d')
-    st.markdown(f'<div style="text-align:center;">{recent_display.to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 # --- TEAM PERFORMANCE ---
 with tab_team:
     col_f1, col_f2 = st.columns([1, 2])
     with col_f1:
-        pos_list = sorted(df_phys['Position'].dropna().unique())
-        selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list, key="sb_team_pos")
+        selected_pos = st.selectbox("Filter Position", ["All Positions"] + sorted(df_phys['Position'].dropna().unique()), key="sb_team_pos")
     with col_f2:
         date_range = st.slider("Filter Date Range", min_value=df_phys['Date'].min().to_pydatetime(), max_value=df_phys['Date'].max().to_pydatetime(), 
                                value=(df_phys['Date'].min().to_pydatetime(), df_phys['Date'].max().to_pydatetime()), key="slider_team")
@@ -179,6 +150,17 @@ with tab_team:
     mask = (df_phys['Date'] >= date_range[0]) & (df_phys['Date'] <= date_range[1])
     range_pbs = df_phys.loc[mask].groupby(['Player', 'Position'])[metrics_list].max().reset_index()
     if selected_pos != "All Positions": range_pbs = range_pbs[range_pbs['Position'] == selected_pos]
+
+    # ADDED: Metric Distribution Chart
+    st.subheader("Squad Performance Distribution")
+    melted_df = range_pbs.melt(id_vars=['Player'], value_vars=metrics_list, var_name='Metric', value_name='Value')
+    melted_df['Metric'] = melted_df['Metric'].str.replace('_', ' ')
+    
+    dist_fig = px.box(melted_df, x="Metric", y="Value", points="all", color="Metric", 
+                      color_discrete_sequence=["#3880ff", "#00d4ff", "#00ff88", "#70a1ff"],
+                      template="plotly_dark")
+    dist_fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False, height=450)
+    st.plotly_chart(dist_fig, use_container_width=True)
 
     st.subheader(f"Leaderboard")
     t_col1, t_col2 = st.columns(2)
@@ -189,12 +171,6 @@ with tab_team:
             top5 = range_pbs[['Player', m]].sort_values(m, ascending=False).head(5).copy().rename(columns={m: clean_name})
             if m in ['Bench', 'Squat']: top5[clean_name] = top5[clean_name].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
-
-    avg_header = "Positional Averages" if selected_pos == "All Positions" else f"{selected_pos} Averages"
-    st.subheader(avg_header)
-    avg_display = range_pbs.groupby('Position')[metrics_list].mean().round(1).reset_index().rename(columns={'Max_Speed': 'Max Speed'})
-    if selected_pos != "All Positions": avg_display = avg_display.drop(columns=['Position'])
-    st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
 # --- HEAD TO HEAD ---
 with tab_compare:
@@ -208,28 +184,14 @@ with tab_compare:
 
     col_l, col_r = st.columns([1, 1])
     with col_l:
-        categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
         fig_comp = go.Figure()
-        fig_comp.add_trace(go.Scatterpolar(r=p1_pct.values, theta=categories, fill='toself', name=p1_name, line_color='#3880ff'))
-        fig_comp.add_trace(go.Scatterpolar(r=p2_pct.values, theta=categories, fill='toself', name=p2_name, line_color='#00ff88'))
-        
-        # UPDATED: Forced White Legend (Key) text
-        fig_comp.update_layout(
-            polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            font=dict(color="white"),
-            showlegend=True,
-            legend=dict(
-                font=dict(color="white", size=14),
-                orientation="h", 
-                yanchor="bottom", y=1.1, 
-                xanchor="center", x=0.5
-            )
-        )
+        fig_comp.add_trace(go.Scatterpolar(r=p1_pct.values, theta=['Speed', 'Vert', 'Bench', 'Squat'], fill='toself', name=p1_name, line_color='#3880ff'))
+        fig_comp.add_trace(go.Scatterpolar(r=p2_pct.values, theta=['Speed', 'Vert', 'Bench', 'Squat'], fill='toself', name=p2_name, line_color='#00ff88'))
+        fig_comp.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
+                               paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"),
+                               legend=dict(font=dict(color="white", size=14), orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5))
         st.plotly_chart(fig_comp, use_container_width=True)
-        
     with col_r:
-        st.markdown("<p style='text-align:center; color:#00d4ff;'><b>Direct Comparison</b></p>", unsafe_allow_html=True)
         comp_data = []
         for m in metrics_list:
             diff = round(p1_data[m] - p2_data[m], 1)
