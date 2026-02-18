@@ -34,6 +34,10 @@ def load_data():
     try:
         df = pd.read_csv(sheet_url)
         df.columns = df.columns.str.strip()
+        # Clean numeric columns to handle decimals/NaNs
+        for col in ['Max_Speed', 'Vertical', 'Bench', 'Squat']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
         if 'Date' in df.columns:
             df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
         return df
@@ -51,23 +55,14 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 
 st.markdown("""
 <style>
-/* 1. Global & Text */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
-
-/* 2. Search Athlete Label & Tab Colors */
 .stSelectbox label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
-
-/* 3. Kill the "Weird Shadow" / Focus Highlight */
 *:focus, *:active, .stSelectbox:focus-within, div[data-baseweb="select"] {
-    outline: none !important;
-    box-shadow: none !important;
-    border-color: rgba(255,255,255,0.2) !important;
+    outline: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.2) !important;
 }
-
-/* 4. Layout Components */
 .player-info { margin-left: 30px; width: 100%; }
 .player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; text-align: left;}
 .player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: #ffffff ; text-align: left;}
@@ -79,8 +74,6 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
-
-/* 5. Tables */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -96,16 +89,19 @@ tab_indiv, tab_team = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE"])
 metrics_list = ['Max_Speed', 'Vertical', 'Bench', 'Squat']
 
 with tab_indiv:
-    # Athlete Search - ONLY in this tab
     selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()))
     p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
     latest = p_history.iloc[-1]
 
-    # Team Rankings (Calculated based on everyone's Personal Bests)
+    # Team Rankings Calculation
     team_pbs = df_phys.groupby('Player')[metrics_list].max()
     team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
     player_pbs = team_pbs.loc[selected_player]
     player_ranks = team_ranks.loc[selected_player]
+
+    # Convert Bench/Squat to int for display
+    b_val = int(player_pbs['Bench']) if pd.notna(player_pbs['Bench']) else 0
+    s_val = int(player_pbs['Squat']) if pd.notna(player_pbs['Squat']) else 0
 
     valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
     current_img_url = valid_images.iloc[-1]['Image_URL'] if not valid_images.empty else ""
@@ -124,8 +120,8 @@ with tab_indiv:
             <div class="metrics">
                 <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{player_pbs['Max_Speed']}</p><p class="m-sub">Ranked #{player_ranks['Max_Speed']}</p></div>
                 <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{player_pbs['Vertical']}"</p><p class="m-sub">Ranked #{player_ranks['Vertical']}</p></div>
-                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{player_pbs['Bench']}</p><p class="m-sub">Ranked #{player_ranks['Bench']}</p></div>
-                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{player_pbs['Squat']}</p><p class="m-sub">Ranked #{player_ranks['Squat']}</p></div>
+                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{b_val}</p><p class="m-sub">Ranked #{player_ranks['Bench']}</p></div>
+                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{s_val}</p><p class="m-sub">Ranked #{player_ranks['Squat']}</p></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -136,22 +132,23 @@ with tab_indiv:
         vals = recent[m].values
         new_col = []
         for i in range(len(vals)):
-            if i == 0: new_col.append(f"{vals[i]} –")
+            # Clean display for Bench/Squat in history table
+            curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
+            
+            if i == 0: 
+                new_col.append(f"{curr_display} –")
             else:
                 color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
-                new_col.append(f"{vals[i]} <span style='color:{color}'>{arrow}</span>")
+                new_col.append(f"{curr_display} <span style='color:{color}'>{arrow}</span>")
         recent[m] = new_col
     recent['Date'] = recent['Date'].dt.strftime('%Y-%m-%d')
     st.markdown(f'<div style="text-align:center;">{recent[["Date"] + metrics_list].to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
-    # Filter by position
-    pos_list = sorted(df_phys['Position'].unique())
+    pos_list = sorted(df_phys['Position'].dropna().unique())
     selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list)
 
-    # Calculation logic for "Averages" (Average of each person's PB)
-    # First, get the best for every player in the entire sheet
     all_player_pbs = df_phys.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
 
     if selected_pos == "All Positions":
@@ -164,12 +161,20 @@ with tab_team:
     for i, m in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
             st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{m.replace('_',' ')}</b></p>", unsafe_allow_html=True)
-            top5 = display_df[['Player', m]].sort_values(m, ascending=False).head(5)
+            top5 = display_df[['Player', m]].sort_values(m, ascending=False).head(5).copy()
+            # Remove decimals from Leaderboard for Bench/Squat
+            if m in ['Bench', 'Squat']:
+                top5[m] = top5[m].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    st.subheader(f"Position Averages")
-    # Group by position and find the mean of those PBs
+    st.subheader(f"Position Averages (Based on Personal Bests)")
     avg_data = all_player_pbs.groupby('Position')[metrics_list].mean().reset_index()
+    
+    # Custom rounding: 1 decimal for speed/vert, 0 for bench/squat
+    avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
+    avg_data['Vertical'] = avg_data['Vertical'].round(1)
+    avg_data['Bench'] = avg_data['Bench'].round(0).astype(int)
+    avg_data['Squat'] = avg_data['Squat'].round(0).astype(int)
     
     if selected_pos != "All Positions":
         avg_data = avg_data[avg_data['Position'] == selected_pos]
