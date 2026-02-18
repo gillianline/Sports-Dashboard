@@ -66,27 +66,29 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 
 st.markdown("""
 <style>
+/* Global Styling */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* Labels & Search Text Visibility */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
-
-/* FIX: Ensure selectbox text (athlete names) is white and readable */
-div[data-baseweb="select"] span, div[data-baseweb="select"] div {
-    color: #ffffff !important;
+/* FIX: Forces ALL text inside SelectBoxes (Dropdowns) to be White */
+div[data-baseweb="select"] * {
+    color: white !important;
 }
+
+/* Fixes the dropdown list items specifically */
+ul[role="listbox"] li {
+    color: white !important;
+    background-color: #161b22 !important;
+}
+
+/* Slider and SelectBox Label Colors */
+.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
 
 /* Tabs Styling */
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* Kill Focus Shadows */
-*:focus, *:active, .stSelectbox:focus-within, div[data-baseweb="select"] {
-    outline: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.2) !important;
-}
-
-/* Metric Boxes */
+/* Metric Box Styling */
 .metric-box { 
     background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
     padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
@@ -95,7 +97,7 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
 
-/* Tables */
+/* Table Styling */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -157,7 +159,8 @@ with tab_indiv:
         new_col = []
         for i in range(len(vals)):
             curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
-            if i == 0: new_col.append(f"{curr_display} –")
+            if i == 0: 
+                new_col.append(f"{curr_display} –")
             else:
                 color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
@@ -200,8 +203,10 @@ with tab_team:
     avg_data['Bench'] = avg_data['Bench'].fillna(0).astype(int)
     avg_data['Squat'] = avg_data['Squat'].fillna(0).astype(int)
     avg_display = avg_data.rename(columns={'Max_Speed': 'Max Speed'})
+
     if selected_pos != "All Positions":
         avg_display = avg_display[avg_display['Position'] == selected_pos].drop(columns=['Position'])
+    
     st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
 # --- HEAD-TO-HEAD ---
@@ -227,11 +232,8 @@ with tab_compare:
         fig_comp.update_layout(
             polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
             paper_bgcolor='rgba(0,0,0,0)', 
-            font=dict(color="white"), # Chart font to white
-            legend=dict(
-                font=dict(color="white"), # Legend text to white
-                orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5
-            )
+            font=dict(color="white"),
+            legend=dict(font=dict(color="white"), orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
         )
         st.plotly_chart(fig_comp, use_container_width=True)
     with col_r:
