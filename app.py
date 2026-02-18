@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
 from datetime import datetime
 
 # -------------------
@@ -35,7 +37,7 @@ def load_data():
     try:
         df = pd.read_csv(sheet_url)
         df.columns = df.columns.str.strip()
-        for col in ['Max_Speed', 'Vertical', 'Bench', 'Squat']:
+        for col in ['Max_Speed', 'Vertical', 'Bench', 'Squat', 'Weight']:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         if 'Date' in df.columns:
@@ -63,10 +65,6 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 *:focus, *:active, .stSelectbox:focus-within, div[data-baseweb="select"] {
     outline: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.2) !important;
 }
-.player-info { margin-left: 30px; width: 100%; }
-.player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; text-align: left;}
-.player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: #ffffff ; text-align: left;}
-.metrics { display: flex; gap: 20px; justify-content: flex-start; flex-wrap: wrap; }
 .metric-box { 
     background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
     padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
@@ -93,36 +91,75 @@ with tab_indiv:
     p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
     latest = p_history.iloc[-1]
 
+    # Teamwide Stats for Comparison
     team_pbs = df_phys.groupby('Player')[metrics_list].max()
     team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
+    team_percentiles = team_pbs.rank(pct=True) * 100
+    
     player_pbs = team_pbs.loc[selected_player]
     player_ranks = team_ranks.loc[selected_player]
+    player_pcts = team_percentiles.loc[selected_player]
 
-    b_val = int(player_pbs['Bench']) if pd.notna(player_pbs['Bench']) else 0
-    s_val = int(player_pbs['Squat']) if pd.notna(player_pbs['Squat']) else 0
+    # ATHLETICISM SCORE
+    ath_score = int(player_pcts.mean())
 
-    valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
-    current_img_url = valid_images.iloc[-1]['Image_URL'] if not valid_images.empty else ""
+    # STRENGTH TO WEIGHT
+    bw = latest.get('Weight', 1) # Avoid division by zero
+    s_w_bench = round(player_pbs['Bench'] / bw, 2)
+    s_w_squat = round(player_pbs['Squat'] / bw, 2)
 
     st.subheader("Athlete Evaluation")
-    col_img, col_info = st.columns([1,3])
+    col_img, col_info, col_radar = st.columns([1.2, 2.5, 2])
+    
     with col_img:
+        current_img_url = p_history[p_history['Image_URL'].notna()].iloc[-1]['Image_URL'] if not p_history[p_history['Image_URL'].notna()].empty else ""
         st.image(get_drive_image(current_img_url), use_container_width=True)
+        st.markdown(f"""
+            <div class="metric-box" style="margin-top:10px; border: 2px solid #00d4ff;">
+                <p class="m-label">Athleticism Score</p>
+                <p class="m-value" style="color:#00d4ff;">{ath_score}</p>
+                <p class="m-sub">Team Percentile</p>
+            </div>
+        """, unsafe_allow_html=True)
 
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
         st.markdown(f"""
-        <div class="player-info">
-            <p class="player-name">{selected_player}</p>
-            <p class="player-meta">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight','')} LBS</p>
-            <div class="metrics">
-                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{player_pbs['Max_Speed']}</p><p class="m-sub">Ranked #{player_ranks['Max_Speed']}</p></div>
-                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{player_pbs['Vertical']}"</p><p class="m-sub">Ranked #{player_ranks['Vertical']}</p></div>
-                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{b_val}</p><p class="m-sub">Ranked #{player_ranks['Bench']}</p></div>
-                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{s_val}</p><p class="m-sub">Ranked #{player_ranks['Squat']}</p></div>
+        <div style="margin-left:20px;">
+            <p style="font-size: 2.5rem; font-weight: 800; margin: 0;">{selected_player}</p>
+            <p style="font-size: 1.1rem; color: #a0a0a0; margin-bottom:20px;">{latest.get('Position','')} | Ht: {h_str} | Wt: {bw} LBS</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{player_pbs['Max_Speed']}</p><p class="m-sub">Rank #{player_ranks['Max_Speed']}</p></div>
+                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{player_pbs['Vertical']}"</p><p class="m-sub">Rank #{player_ranks['Vertical']}</p></div>
+                <div class="metric-box"><p class="m-label">S:W Bench</p><p class="m-value">{s_w_bench}</p><p class="m-sub">Ratio</p></div>
+                <div class="metric-box"><p class="m-label">S:W Squat</p><p class="m-value">{s_w_squat}</p><p class="m-sub">Ratio</p></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+    with col_radar:
+        # PERCENTILE RADAR CHART
+        categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
+        fig = go.Figure()
+        fig.add_trace(go.Scatterpolar(
+            r=player_pcts.values,
+            theta=categories,
+            fill='toself',
+            name=selected_player,
+            line_color='#00d4ff'
+        ))
+        fig.update_layout(
+            polar=dict(
+                bgcolor='#0d1117',
+                radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='rgba(255,255,255,0.1)'),
+                angularaxis=dict(color='white', gridcolor='rgba(255,255,255,0.1)')
+            ),
+            showlegend=False,
+            paper_bgcolor='rgba(0,0,0,0)',
+            height=350,
+            margin=dict(l=40, r=40, t=40, b=40)
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Recent Evaluation History")
     recent = p_history.tail(5).copy()
@@ -137,11 +174,8 @@ with tab_indiv:
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
                 new_col.append(f"{curr_display} <span style='color:{color}'>{arrow}</span>")
         recent[m] = new_col
-    
-    # Rename for table display
     recent_display = recent[["Date"] + metrics_list].rename(columns={'Max_Speed': 'Max Speed'})
     recent_display['Date'] = recent_display['Date'].dt.strftime('%Y-%m-%d')
-    
     st.markdown(f'<div style="text-align:center;">{recent_display.to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
@@ -149,19 +183,13 @@ with tab_team:
     with col_f1:
         pos_list = sorted(df_phys['Position'].dropna().unique())
         selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list)
-    
     with col_f2:
         min_date = df_phys['Date'].min().to_pydatetime()
         max_date = df_phys['Date'].max().to_pydatetime()
-        date_range = st.slider("Filter Date Range", 
-                               min_value=min_date, 
-                               max_value=max_date, 
-                               value=(min_date, max_date),
-                               format="MMM DD, YYYY")
+        date_range = st.slider("Filter Date Range", min_value=min_date, max_value=max_date, value=(min_date, max_date))
 
     mask = (df_phys['Date'] >= date_range[0]) & (df_phys['Date'] <= date_range[1])
     filtered_df = df_phys.loc[mask]
-
     range_pbs = filtered_df.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
 
     if selected_pos != "All Positions":
@@ -175,17 +203,19 @@ with tab_team:
             st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{clean_name}</b></p>", unsafe_allow_html=True)
             top5 = range_pbs[['Player', m]].sort_values(m, ascending=False).head(5).copy()
             top5 = top5.rename(columns={m: clean_name})
-            if m in ['Bench', 'Squat']:
-                top5[clean_name] = top5[clean_name].fillna(0).astype(int)
+            if m in ['Bench', 'Squat']: top5[clean_name] = top5[clean_name].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    st.subheader("Team Averages")
+    # UPDATED SUBHEADER HERE
+    st.subheader("Positional Averages")
     avg_data = range_pbs.groupby('Position')[metrics_list].mean().reset_index()
     avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
     avg_data['Vertical'] = avg_data['Vertical'].round(1)
     avg_data['Bench'] = avg_data['Bench'].round(0).fillna(0).astype(int)
     avg_data['Squat'] = avg_data['Squat'].round(0).fillna(0).astype(int)
     
-    # Final rename for the averages table
     avg_display = avg_data.rename(columns={'Max_Speed': 'Max Speed'})
-    st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes="vibe-table", index=False, border=0)}</div>", unsafe_allow_html=True)
+    if selected_pos != "All Positions":
+        avg_display = avg_display[avg_display['Position'] == selected_pos]
+        
+    st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
