@@ -167,9 +167,9 @@ with tab_team:
             top5 = display_df[['Player', m]].sort_values(m, ascending=False).head(5)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    st.subheader(f"Position Averages (Based on Personal Bests)")
+    st.subheader(f"Position Averages")
     # Group by position and find the mean of those PBs
-    avg_data = all_player_pbs.groupby('Position')[metrics_list].mean().round(1).reset_index()
+    avg_data = all_player_pbs.groupby('Position')[metrics_list].mean().reset_index()
     
     if selected_pos != "All Positions":
         avg_data = avg_data[avg_data['Position'] == selected_pos]
