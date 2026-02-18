@@ -49,8 +49,31 @@ if df_phys.empty: st.stop()
 st.set_page_config(page_title="Performance Console", layout="wide")
 st.markdown("""
 <style>
+/* Main App Background */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
+
+/* FIX: Search Athlete Text Color */
+.stSelectbox label {
+    color: #00d4ff !important; /* Bright Cyan */
+    font-weight: bold !important;
+    font-size: 1.1rem !important;
+}
+
+/* FIX: Tab Text Color (Individual Profile & Team Performance) */
+button[data-baseweb="tab"] p {
+    color: #ffffff !important; /* White text for tabs */
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+}
+
+/* Color for the active (selected) tab underline */
+button[data-baseweb="tab"][aria-selected="true"] {
+    background-color: rgba(56, 128, 255, 0.2) !important;
+    border-bottom-color: #3880ff !important;
+}
+
+/* Player Card Styling */
 .player-card { 
     background: linear-gradient(90deg, #161b22 0%, #1b1f27 100%); 
     padding: 30px; border-radius: 20px; border-left: 8px solid #3880ff; 
@@ -59,11 +82,15 @@ h1, h2, h3 { text-align: center !important; color: white !important; }
 .player-info { margin-left: 30px; width: 100%; }
 .player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; text-align: left;}
 .player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: #ffffff ; text-align: left;}
+
+/* Metrics Boxes */
 .metrics { display: flex; gap: 20px; justify-content: flex-start; }
 .metric-box { background: #161b22; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; flex:1; }
 .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
+
+/* Table Styling */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
