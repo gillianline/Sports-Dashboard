@@ -82,7 +82,7 @@ div[role="option"] { color: #0d1117 !important; background-color: white !importa
 div[role="option"]:hover { background-color: #3880ff !important; color: white !important; }
 
 /* Labels, Tabs, and Sliders */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; text-align: center !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
@@ -110,8 +110,8 @@ tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMA
 
 # --- INDIVIDUAL PROFILE ---
 with tab_indiv:
-    # Constrain width of the search bar
-    col_sel, _ = st.columns([1, 2])
+    # Centered search bar
+    _, col_sel, _ = st.columns([1, 1, 1])
     with col_sel:
         selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
     
@@ -214,8 +214,8 @@ with tab_team:
 # --- HEAD-TO-HEAD ---
 with tab_compare:
     st.subheader("Head-to-Head Athlete Comparison")
-    # Shorter select bars here too
-    c1, c2, _ = st.columns([1, 1, 1])
+    # Centered select bars for comparison
+    _, c1, c2, _ = st.columns([0.5, 1, 1, 0.5])
     with c1:
         p1_name = st.selectbox("Select Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
     with c2:
