@@ -126,7 +126,7 @@ with tab_indiv:
         img_df = p_history[p_history['Image_URL'].notna()]
         current_img_url = img_df.iloc[-1]['Image_URL'] if not img_df.empty else ""
         st.image(get_drive_image(current_img_url), use_container_width=True)
-        st.markdown(f'<div class="metric-box" style="margin-top:10px; border: 2px solid #3880ff;"><p class="m-label">Athleticism Score</p><p class="m-value">{p_data["Ath_Score"]}</p><p class="m-sub">Team Percentile</p></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-box" style="margin-top:10px; border: 2px solid #3880ff;"><p class="m-label">Athleticism Score</p><p class="m-value">{p_data["Ath_Score"]}</p></div>', unsafe_allow_html=True)
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
         st.markdown(f"""
