@@ -132,7 +132,7 @@ with tab_indiv:
         categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(r=p_pct_row.values, theta=categories, fill='toself', name=selected_player, line_color='#3880ff'))
-        fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350)
+        fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='rgba(255,255,255,0.1)')), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(l=40, r=40, t=40, b=40))
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Recent Evaluation History")
@@ -188,10 +188,6 @@ with tab_team:
     if selected_pos != "All Positions":
         avg_display = avg_display[avg_display['Position'] == selected_pos].drop(columns=['Position'])
     st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
-
-    st.subheader("Athleticism Leaderboard (By Position Group)")
-    pos_ath = team_pbs.groupby('Position')['Ath_Score'].mean().round(1).sort_values(ascending=False).reset_index()
-    st.markdown(f"<div style='text-align:center'>{pos_ath.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
 # --- HEAD-TO-HEAD ---
 with tab_compare:
