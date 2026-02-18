@@ -58,7 +58,7 @@ h1, h2, h3 { text-align: center !important; color: white !important; }
 }
 .player-info { margin-left: 30px; width: 100%; }
 .player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; text-align: left;}
-.player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: #d0d0d0; text-align: left;}
+.player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: white; text-align: left;}
 .metrics { display: flex; gap: 20px; justify-content: flex-start; }
 .metric-box { background: #161b22; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; flex:1; }
 .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
