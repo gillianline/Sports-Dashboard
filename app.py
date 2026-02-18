@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+
 # -------------------
 # HELPER FUNCTIONS
 # -------------------
@@ -47,45 +48,32 @@ if df_phys.empty: st.stop()
 # PAGE CONFIG & CSS
 # -------------------
 st.set_page_config(page_title="Performance Console", layout="wide")
+
 st.markdown("""
 <style>
-/* Main App Background */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* FIX: Search Athlete Text Color */
-.stSelectbox label {
-    color: #00d4ff !important; /* Bright Cyan */
-    font-weight: bold !important;
-    font-size: 1.1rem !important;
+/* Labels & Tabs Visibility */
+.stSelectbox label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
+
+/* Remove Click Shadows/Outlines */
+button:focus, input:focus, .stSelectbox:focus-within, div[data-baseweb="select"] {
+    outline: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.2) !important;
 }
 
-/* FIX: Tab Text Color (Individual Profile & Team Performance) */
-button[data-baseweb="tab"] p {
-    color: #ffffff !important; /* White text for tabs */
-    font-weight: 600 !important;
-    font-size: 1.1rem !important;
-}
+button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* Color for the active (selected) tab underline */
-button[data-baseweb="tab"][aria-selected="true"] {
-    background-color: rgba(56, 128, 255, 0.2) !important;
-    border-bottom-color: #3880ff !important;
-}
-
-/* Player Card Styling */
-.player-card { 
-    background: linear-gradient(90deg, #161b22 0%, #1b1f27 100%); 
-    padding: 30px; border-radius: 20px; border-left: 8px solid #3880ff; 
-    margin-bottom: 25px; display: flex; align-items: center; 
-}
+/* Metric Styling */
 .player-info { margin-left: 30px; width: 100%; }
 .player-name { font-size: 3rem; font-weight: 800; margin: 0; color: #ffffff; text-align: left;}
 .player-meta { font-size: 1.2rem; opacity: 1; margin: 5px 0 15px 0; color: #ffffff ; text-align: left;}
-
-/* Metrics Boxes */
-.metrics { display: flex; gap: 20px; justify-content: flex-start; }
-.metric-box { background: #161b22; border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; flex:1; }
+.metrics { display: flex; gap: 20px; justify-content: flex-start; flex-wrap: wrap; }
+.metric-box { 
+    background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
+    padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
+}
 .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
@@ -100,39 +88,33 @@ button[data-baseweb="tab"][aria-selected="true"] {
 st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
 
 # -------------------
-# PLAYER SELECTION
+# MAIN TABS
 # -------------------
-selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()))
-p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
-latest = p_history.iloc[-1]
-
-# -------------------
-# RANKING LOGIC
-# -------------------
-metrics_list = ['Max_Speed', 'Vertical', 'Bench', 'Squat']
-
-# 1. Create a table of every player's Personal Best
-team_pbs = df_phys.groupby('Player')[metrics_list].max()
-
-# 2. Get Ranks (method='min' means if two people tie for 1st, the next person is 3rd)
-team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
-
-# 3. Pull this specific player's PBs and Ranks
-player_pbs = team_pbs.loc[selected_player]
-player_ranks = team_ranks.loc[selected_player]
-
-# FIND THE MOST RECENT NON-EMPTY IMAGE
-valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
-current_img_url = valid_images.iloc[-1]['Image_URL'] if not valid_images.empty else ""
-
 tab_indiv, tab_team = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE"])
 
+metrics_list = ['Max_Speed', 'Vertical', 'Bench', 'Squat']
+
 with tab_indiv:
+    # Athlete Search only appears here
+    selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()))
+    
+    p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
+    latest = p_history.iloc[-1]
+
+    # Global Rank Logic (Calculated against whole team)
+    team_pbs = df_phys.groupby('Player')[metrics_list].max()
+    team_ranks = team_pbs.rank(ascending=False, method='min').astype(int)
+    player_pbs = team_pbs.loc[selected_player]
+    player_ranks = team_ranks.loc[selected_player]
+
+    valid_images = p_history[p_history['Image_URL'].notna() & (p_history['Image_URL'] != "")]
+    current_img_url = valid_images.iloc[-1]['Image_URL'] if not valid_images.empty else ""
+
     st.subheader("Athlete Evaluation")
     col_img, col_info = st.columns([1,3])
     
     with col_img:
-        st.image(get_drive_image(current_img_url), width=250)
+        st.image(get_drive_image(current_img_url), use_container_width=True)
 
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
@@ -141,31 +123,14 @@ with tab_indiv:
             <p class="player-name">{selected_player}</p>
             <p class="player-meta">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight','')} LBS</p>
             <div class="metrics">
-                <div class="metric-box">
-                    <p class="m-label">All-Time Max Speed</p>
-                    <p class="m-value">{player_pbs['Max_Speed']}</p>
-                    <p class="m-sub">Ranked #{player_ranks['Max_Speed']} on Team</p>
-                </div>
-                <div class="metric-box">
-                    <p class="m-label">All-Time Vertical</p>
-                    <p class="m-value">{player_pbs['Vertical']}"</p>
-                    <p class="m-sub">Ranked #{player_ranks['Vertical']} on Team</p>
-                </div>
-                <div class="metric-box">
-                    <p class="m-label">All-Time Bench</p>
-                    <p class="m-value">{player_pbs['Bench']}</p>
-                    <p class="m-sub">Ranked #{player_ranks['Bench']} on Team</p>
-                </div>
-                <div class="metric-box">
-                    <p class="m-label">All-Time Squat</p>
-                    <p class="m-value">{player_pbs['Squat']}</p>
-                    <p class="m-sub">Ranked #{player_ranks['Squat']} on Team</p>
-                </div>
+                <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{player_pbs['Max_Speed']}</p><p class="m-sub">Ranked #{player_ranks['Max_Speed']}</p></div>
+                <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{player_pbs['Vertical']}"</p><p class="m-sub">Ranked #{player_ranks['Vertical']}</p></div>
+                <div class="metric-box"><p class="m-label">Bench</p><p class="m-value">{player_pbs['Bench']}</p><p class="m-sub">Ranked #{player_ranks['Bench']}</p></div>
+                <div class="metric-box"><p class="m-label">Squat</p><p class="m-value">{player_pbs['Squat']}</p><p class="m-sub">Ranked #{player_ranks['Squat']}</p></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # RECENT PERFORMANCE
     st.subheader("Evaluation History (Last 5 Sessions)")
     recent = p_history.tail(5).copy()
     for m in metrics_list:
@@ -182,14 +147,33 @@ with tab_indiv:
     st.markdown(f'<div style="text-align:center;">{recent[["Date"] + metrics_list].to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
-    st.subheader("Top Performers")
+    # Position Filter only appears here
+    all_positions = sorted(df_phys['Position'].dropna().unique())
+    pos_choice = st.selectbox("Filter by Position", ["All Positions"] + all_positions)
+
+    # Filter data based on selection
+    if pos_choice == "All Positions":
+        filtered_df = df_phys
+    else:
+        filtered_df = df_phys[df_phys['Position'] == pos_choice]
+
+    st.subheader(f"Top Performers: {pos_choice}")
+    
     t_col1, t_col2 = st.columns(2)
     for i, metric in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
-            st.markdown(f"<p style='text-align:center; color:#00d4ff;'><b>Top 5: {metric.replace('_',' ')}</b></p>", unsafe_allow_html=True)
-            top5 = df_phys.groupby('Player')[metric].max().sort_values(ascending=False).head(5).reset_index()
+            st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:20px;'><b>Top 5: {metric.replace('_',' ')}</b></p>", unsafe_allow_html=True)
+            # Get max for each player within the filtered subset
+            top5 = filtered_df.groupby('Player')[metric].max().sort_values(ascending=False).head(5).reset_index()
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
     
-    st.subheader("Team Averages by Position")
-    avg_metrics = df_phys.groupby('Position')[metrics_list].mean().round(1).reset_index()
+    st.subheader("Averages")
+    if pos_choice == "All Positions":
+        # Group by position if looking at everything
+        avg_metrics = df_phys.groupby('Position')[metrics_list].mean().round(1).reset_index()
+    else:
+        # Show just the single position average
+        avg_metrics = filtered_df[metrics_list].mean().round(1).to_frame().T
+        avg_metrics.insert(0, 'Position', pos_choice)
+
     st.markdown(f"<div style='text-align:center'>{avg_metrics.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
