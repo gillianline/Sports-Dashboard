@@ -70,21 +70,38 @@ st.markdown("""
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* DROPDOWN STYLING: White background, Dark text */
-div[data-baseweb="select"] {
-    background-color: white !important;
-    border-radius: 8px !important;
+/* FIX: TABS TO THE TOP LEFT CORNER */
+div[data-baseweb="tabs"] {
+    justify-content: flex-start !important;
 }
+button[data-baseweb="tab"] {
+    padding-left: 0px !important;
+    padding-right: 20px !important;
+}
+button[data-baseweb="tab"] p { 
+    color: #ffffff !important; 
+    font-weight: 600 !important; 
+    font-size: 0.9rem !important; 
+}
+button[data-baseweb="tab"][aria-selected="true"] { 
+    border-bottom-color: #3880ff !important; 
+}
+
+/* DROPDOWN STYLING: High Contrast */
+div[data-baseweb="select"] { background-color: white !important; border-radius: 8px !important; }
 div[data-baseweb="select"] div { color: #0d1117 !important; }
 input[data-baseweb="input"] { color: #0d1117 !important; }
 div[role="listbox"] { background-color: white !important; }
 div[role="option"] { color: #0d1117 !important; background-color: white !important; }
 div[role="option"]:hover { background-color: #3880ff !important; color: white !important; }
 
-/* Labels, Tabs, and Sliders */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; text-align: center !important; }
-button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
-button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
+/* Labels & Search Headers */
+.stSelectbox label p, .stSlider label p { 
+    color: #00d4ff !important; 
+    font-weight: bold !important; 
+    font-size: 1.1rem !important; 
+    text-align: center !important; 
+}
 
 /* Component Styling */
 .metric-box { 
@@ -101,36 +118,32 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 style='letter-spacing:-2px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='letter-spacing:-2px; margin-top:-50px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
 
 # -------------------
-# MAIN TABS
+# MAIN TABS (Aligned to Left)
 # -------------------
-tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMANCE", "HEAD-TO-HEAD"])
+tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL", "TEAM", "H2H"])
 
 # --- INDIVIDUAL PROFILE ---
 with tab_indiv:
-    # Centered search bar
     _, col_sel, _ = st.columns([1, 1, 1])
     with col_sel:
         selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
     
     p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
     latest = p_history.iloc[-1]
-    
     p_data = team_pbs[team_pbs['Player'] == selected_player].iloc[0]
     p_rank_row = team_ranks.iloc[p_data.name]
     p_pct_row = team_percentiles.iloc[p_data.name]
 
     st.subheader("Athlete Evaluation")
     col_img, col_info, col_radar = st.columns([1.2, 2.5, 2])
-    
     with col_img:
         img_df = p_history[p_history['Image_URL'].notna()]
         current_img_url = img_df.iloc[-1]['Image_URL'] if not img_df.empty else ""
         st.image(get_drive_image(current_img_url), use_container_width=True)
         st.markdown(f'<div class="metric-box" style="margin-top:10px; border: 2px solid #3880ff;"><p class="m-label">Athleticism Score</p><p class="m-value">{p_data["Ath_Score"]}</p><p class="m-sub">Team Percentile</p></div>', unsafe_allow_html=True)
-
     with col_info:
         h_str = inches_to_feet(latest.get('Height', ""))
         st.markdown(f"""
@@ -145,15 +158,12 @@ with tab_indiv:
             </div>
         </div>
         """, unsafe_allow_html=True)
-
     with col_radar:
         categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(r=p_pct_row.values, theta=categories, fill='toself', name=selected_player, line_color='#3880ff'))
-        fig.update_layout(
-            polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='rgba(255,255,255,0.1)')),
-            showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(l=40, r=40, t=40, b=40), font=dict(color="white")
-        )
+        fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
+                         showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350)
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Recent Evaluation History")
@@ -163,8 +173,7 @@ with tab_indiv:
         new_col = []
         for i in range(len(vals)):
             curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
-            if i == 0: 
-                new_col.append(f"{curr_display} –")
+            if i == 0: new_col.append(f"{curr_display} –")
             else:
                 color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
@@ -181,50 +190,38 @@ with tab_team:
         pos_list = sorted(df_phys['Position'].dropna().unique())
         selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list, key="sb_team_pos")
     with col_f2:
-        min_date, max_date = df_phys['Date'].min().to_pydatetime(), df_phys['Date'].max().to_pydatetime()
-        date_range = st.slider("Filter Date Range", min_value=min_date, max_value=max_date, value=(min_date, max_date), key="slider_team")
-
+        date_range = st.slider("Filter Date Range", min_value=df_phys['Date'].min().to_pydatetime(), max_value=df_phys['Date'].max().to_pydatetime(), 
+                               value=(df_phys['Date'].min().to_pydatetime(), df_phys['Date'].max().to_pydatetime()), key="slider_team")
+    
     mask = (df_phys['Date'] >= date_range[0]) & (df_phys['Date'] <= date_range[1])
-    filtered_df = df_phys.loc[mask]
-    range_pbs = filtered_df.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
+    range_pbs = df_phys.loc[mask].groupby(['Player', 'Position'])[metrics_list].max().reset_index()
+    if selected_pos != "All Positions": range_pbs = range_pbs[range_pbs['Position'] == selected_pos]
 
-    if selected_pos != "All Positions":
-        range_pbs = range_pbs[range_pbs['Position'] == selected_pos]
-
-    st.subheader(f"Leaderboard ({date_range[0].strftime('%b %d')} - {date_range[1].strftime('%b %d')})")
+    st.subheader(f"Leaderboard")
     t_col1, t_col2 = st.columns(2)
     for i, m in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
             clean_name = m.replace('_', ' ')
-            st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{clean_name}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:center; color:#00d4ff;'><b>{clean_name}</b></p>", unsafe_allow_html=True)
             top5 = range_pbs[['Player', m]].sort_values(m, ascending=False).head(5).copy().rename(columns={m: clean_name})
             if m in ['Bench', 'Squat']: top5[clean_name] = top5[clean_name].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
     avg_header = "Positional Averages" if selected_pos == "All Positions" else f"{selected_pos} Averages"
     st.subheader(avg_header)
-    avg_data = range_pbs.groupby('Position')[metrics_list].mean().round(1).reset_index()
-    avg_data['Bench'] = avg_data['Bench'].fillna(0).astype(int)
-    avg_data['Squat'] = avg_data['Squat'].fillna(0).astype(int)
-    avg_display = avg_data.rename(columns={'Max_Speed': 'Max Speed'})
-    if selected_pos != "All Positions":
-        avg_display = avg_display[avg_display['Position'] == selected_pos].drop(columns=['Position'])
+    avg_display = range_pbs.groupby('Position')[metrics_list].mean().round(1).reset_index().rename(columns={'Max_Speed': 'Max Speed'})
+    if selected_pos != "All Positions": avg_display = avg_display.drop(columns=['Position'])
     st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
 # --- HEAD-TO-HEAD ---
 with tab_compare:
-    st.subheader("Head-to-Head Athlete Comparison")
-    # Centered select bars for comparison
+    st.subheader("H2H Comparison")
     _, c1, c2, _ = st.columns([0.5, 1, 1, 0.5])
-    with c1:
-        p1_name = st.selectbox("Select Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
-    with c2:
-        p2_name = st.selectbox("Select Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
+    with c1: p1_name = st.selectbox("Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
+    with c2: p2_name = st.selectbox("Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
     
-    p1_data = team_pbs[team_pbs['Player'] == p1_name].iloc[0]
-    p2_data = team_pbs[team_pbs['Player'] == p2_name].iloc[0]
-    p1_pct = team_percentiles.iloc[p1_data.name]
-    p2_pct = team_percentiles.iloc[p2_data.name]
+    p1_data, p2_data = team_pbs[team_pbs['Player'] == p1_name].iloc[0], team_pbs[team_pbs['Player'] == p2_name].iloc[0]
+    p1_pct, p2_pct = team_percentiles.iloc[p1_data.name], team_percentiles.iloc[p2_data.name]
 
     col_l, col_r = st.columns([1, 1])
     with col_l:
@@ -232,14 +229,9 @@ with tab_compare:
         fig_comp = go.Figure()
         fig_comp.add_trace(go.Scatterpolar(r=p1_pct.values, theta=categories, fill='toself', name=p1_name, line_color='#3880ff'))
         fig_comp.add_trace(go.Scatterpolar(r=p2_pct.values, theta=categories, fill='toself', name=p2_name, line_color='#00ff88'))
-        fig_comp.update_layout(
-            polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-            paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"),
-            legend=dict(font=dict(color="white"), orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
-        )
+        fig_comp.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"))
         st.plotly_chart(fig_comp, use_container_width=True)
     with col_r:
-        st.markdown("<p style='text-align:center; color:#00d4ff;'><b>Direct Comparison</b></p>", unsafe_allow_html=True)
         comp_data = []
         for m in metrics_list:
             diff = round(p1_data[m] - p2_data[m], 1)
