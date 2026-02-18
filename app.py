@@ -137,18 +137,20 @@ with tab_indiv:
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
                 new_col.append(f"{curr_display} <span style='color:{color}'>{arrow}</span>")
         recent[m] = new_col
-    recent['Date'] = recent['Date'].dt.strftime('%Y-%m-%d')
-    st.markdown(f'<div style="text-align:center;">{recent[["Date"] + metrics_list].to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
+    
+    # Rename for table display
+    recent_display = recent[["Date"] + metrics_list].rename(columns={'Max_Speed': 'Max Speed'})
+    recent_display['Date'] = recent_display['Date'].dt.strftime('%Y-%m-%d')
+    
+    st.markdown(f'<div style="text-align:center;">{recent_display.to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
-    # --- FILTERS ---
     col_f1, col_f2 = st.columns(2)
     with col_f1:
         pos_list = sorted(df_phys['Position'].dropna().unique())
         selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list)
     
     with col_f2:
-        # Date Range Filter
         min_date = df_phys['Date'].min().to_pydatetime()
         max_date = df_phys['Date'].max().to_pydatetime()
         date_range = st.slider("Filter Date Range", 
@@ -157,33 +159,33 @@ with tab_team:
                                value=(min_date, max_date),
                                format="MMM DD, YYYY")
 
-    # --- FILTER LOGIC ---
     mask = (df_phys['Date'] >= date_range[0]) & (df_phys['Date'] <= date_range[1])
     filtered_df = df_phys.loc[mask]
 
-    # Calculate Personal Bests within the selected date range
     range_pbs = filtered_df.groupby(['Player', 'Position'])[metrics_list].max().reset_index()
 
     if selected_pos != "All Positions":
         range_pbs = range_pbs[range_pbs['Position'] == selected_pos]
 
-    # --- TOP 5 LEADERBOARD ---
     st.subheader(f"Leaderboard ({date_range[0].strftime('%b %d')} - {date_range[1].strftime('%b %d')})")
     t_col1, t_col2 = st.columns(2)
     for i, m in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
-            st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{m.replace('_',' ')}</b></p>", unsafe_allow_html=True)
+            clean_name = m.replace('_', ' ')
+            st.markdown(f"<p style='text-align:center; color:#00d4ff; margin-top:15px;'><b>{clean_name}</b></p>", unsafe_allow_html=True)
             top5 = range_pbs[['Player', m]].sort_values(m, ascending=False).head(5).copy()
+            top5 = top5.rename(columns={m: clean_name})
             if m in ['Bench', 'Squat']:
-                top5[m] = top5[m].fillna(0).astype(int)
+                top5[clean_name] = top5[clean_name].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    # --- AVERAGES ---
-    st.subheader("Team Averages")
+    st.subheader("Team Averages (PB based)")
     avg_data = range_pbs.groupby('Position')[metrics_list].mean().reset_index()
     avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
     avg_data['Vertical'] = avg_data['Vertical'].round(1)
     avg_data['Bench'] = avg_data['Bench'].round(0).fillna(0).astype(int)
     avg_data['Squat'] = avg_data['Squat'].round(0).fillna(0).astype(int)
     
-    st.markdown(f"<div style='text-align:center'>{avg_data.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
+    # Final rename for the averages table
+    avg_display = avg_data.rename(columns={'Max_Speed': 'Max Speed'})
+    st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes="vibe-table", index=False, border=0)}</div>", unsafe_allow_html=True)
