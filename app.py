@@ -155,7 +155,7 @@ with tab_indiv:
     st.markdown(f'<div style="text-align:center;">{recent[["Date"] + metrics_list].to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
 
 with tab_team:
-    st.subheader("Positional Intelligence")
+    st.subheader("Top Performers")
     t_col1, t_col2 = st.columns(2)
     for i, metric in enumerate(metrics_list):
         with (t_col1 if i % 2 == 0 else t_col2):
