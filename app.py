@@ -70,45 +70,23 @@ st.markdown("""
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* FIX: FORCED WHITE BACKGROUND / DARK TEXT FOR DROPDOWNS */
+/* DROPDOWN STYLING: White background, Dark text */
 div[data-baseweb="select"] {
     background-color: white !important;
     border-radius: 8px !important;
 }
-
-/* Text color for the selected item in the box */
-div[data-baseweb="select"] div {
-    color: #0d1117 !important;
-}
-
-/* Text color for the input/typing area */
-input[data-baseweb="input"] {
-    color: #0d1117 !important;
-}
-
-/* The dropdown menu list that pops up */
-div[role="listbox"] {
-    background-color: white !important;
-}
-
-/* Individual names in the list */
-div[role="option"] {
-    color: #0d1117 !important;
-    background-color: white !important;
-}
-
-/* Highlight color when hovering over a name */
-div[role="option"]:hover {
-    background-color: #3880ff !important;
-    color: white !important;
-}
+div[data-baseweb="select"] div { color: #0d1117 !important; }
+input[data-baseweb="input"] { color: #0d1117 !important; }
+div[role="listbox"] { background-color: white !important; }
+div[role="option"] { color: #0d1117 !important; background-color: white !important; }
+div[role="option"]:hover { background-color: #3880ff !important; color: white !important; }
 
 /* Labels, Tabs, and Sliders */
 .stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* Components */
+/* Component Styling */
 .metric-box { 
     background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
     padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
@@ -132,7 +110,11 @@ tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL PROFILE", "TEAM PERFORMA
 
 # --- INDIVIDUAL PROFILE ---
 with tab_indiv:
-    selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
+    # Constrain width of the search bar
+    col_sel, _ = st.columns([1, 2])
+    with col_sel:
+        selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
+    
     p_history = df_phys[df_phys['Player'] == selected_player].sort_values('Date')
     latest = p_history.iloc[-1]
     
@@ -194,7 +176,7 @@ with tab_indiv:
 
 # --- TEAM PERFORMANCE ---
 with tab_team:
-    col_f1, col_f2 = st.columns(2)
+    col_f1, col_f2 = st.columns([1, 2])
     with col_f1:
         pos_list = sorted(df_phys['Position'].dropna().unique())
         selected_pos = st.selectbox("Filter Position", ["All Positions"] + pos_list, key="sb_team_pos")
@@ -232,10 +214,11 @@ with tab_team:
 # --- HEAD-TO-HEAD ---
 with tab_compare:
     st.subheader("Head-to-Head Athlete Comparison")
-    c_col1, c_col2 = st.columns(2)
-    with c_col1:
+    # Shorter select bars here too
+    c1, c2, _ = st.columns([1, 1, 1])
+    with c1:
         p1_name = st.selectbox("Select Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
-    with c_col2:
+    with c2:
         p2_name = st.selectbox("Select Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
     
     p1_data = team_pbs[team_pbs['Player'] == p1_name].iloc[0]
