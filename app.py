@@ -64,61 +64,52 @@ team_pbs['Ath_Score'] = team_percentiles.mean(axis=1).astype(int)
 # -------------------
 st.set_page_config(page_title="Performance Console", layout="wide")
 
+# GLOBAL THEME OVERRIDE
 st.markdown("""
 <style>
-/* 1. Global Background */
-.stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
-h1, h2, h3 { text-align: center !important; color: white !important; }
+    /* 1. Global Background & Text */
+    .stApp { background-color: #0d1117; color: #ffffff; }
+    h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* 2. FIX: SELECT BOX (DROPDOWN) VISIBILITY */
-/* Target the text inside the closed select box */
-div[data-baseweb="select"] div {
-    color: white !important;
-}
+    /* 2. FORCED SELECTBOX THEME (Fixes invisible names) */
+    /* Input field text */
+    div[data-baseweb="select"] * {
+        color: white !important;
+        fill: white !important;
+    }
+    
+    /* Dropdown menu background and text */
+    div[data-short-id="selectbox"] div[role="listbox"] {
+        background-color: #161b22 !important;
+    }
+    
+    div[role="option"] {
+        color: white !important;
+        background-color: #161b22 !important;
+    }
 
-/* Target the placeholder and input text */
-input[data-baseweb="input"] {
-    color: white !important;
-}
+    /* Hover effect in dropdown */
+    div[role="option"]:hover {
+        background-color: #3880ff !important;
+    }
 
-/* Target the dropdown menu that pops up */
-div[data-baseweb="menu"] {
-    background-color: #161b22 !important;
-}
+    /* 3. Labels, Tabs, and Sliders */
+    .stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+    button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* Target individual items in the dropdown list */
-div[data-baseweb="menu"] li {
-    color: white !important;
-    background-color: #161b22 !important;
-}
+    /* 4. Formatting Components */
+    .metric-box { 
+        background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
+        padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
+    }
+    .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
+    .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
+    .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
 
-/* Change background color when hovering over an item in the list */
-div[data-baseweb="menu"] li:hover {
-    background-color: #3880ff !important;
-}
-
-/* 3. Labels & Tabs */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
-button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
-button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
-
-/* 4. Focus & Shadows */
-*:focus, *:active, .stSelectbox:focus-within {
-    outline: none !important; box-shadow: none !important;
-}
-
-/* 5. Components */
-.metric-box { 
-    background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
-    padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
-}
-.m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
-.m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
-.m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
-
-.vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
-.vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
-.vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
+    .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
+    .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
 </style>
 """, unsafe_allow_html=True)
 
