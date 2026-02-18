@@ -68,12 +68,25 @@ st.markdown("""
 <style>
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
+
+/* Labels & Search Text Visibility */
 .stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+
+/* FIX: Ensure selectbox text (athlete names) is white and readable */
+div[data-baseweb="select"] span, div[data-baseweb="select"] div {
+    color: #ffffff !important;
+}
+
+/* Tabs Styling */
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
+
+/* Kill Focus Shadows */
 *:focus, *:active, .stSelectbox:focus-within, div[data-baseweb="select"] {
     outline: none !important; box-shadow: none !important; border-color: rgba(255,255,255,0.2) !important;
 }
+
+/* Metric Boxes */
 .metric-box { 
     background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
     padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
@@ -81,6 +94,8 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 .m-label { color: #00d4ff; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom:5px; }
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
+
+/* Tables */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -194,9 +209,9 @@ with tab_compare:
     st.subheader("Head-to-Head Athlete Comparison")
     c_col1, c_col2 = st.columns(2)
     with c_col1:
-        p1_name = st.selectbox("Select Athlete 1", team_pbs['Player'].values, index=0)
+        p1_name = st.selectbox("Select Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
     with c_col2:
-        p2_name = st.selectbox("Select Athlete 2", team_pbs['Player'].values, index=1)
+        p2_name = st.selectbox("Select Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
     
     p1_data = team_pbs[team_pbs['Player'] == p1_name].iloc[0]
     p2_data = team_pbs[team_pbs['Player'] == p2_name].iloc[0]
@@ -209,8 +224,15 @@ with tab_compare:
         fig_comp = go.Figure()
         fig_comp.add_trace(go.Scatterpolar(r=p1_pct.values, theta=categories, fill='toself', name=p1_name, line_color='#3880ff'))
         fig_comp.add_trace(go.Scatterpolar(r=p2_pct.values, theta=categories, fill='toself', name=p2_name, line_color='#00ff88'))
-        fig_comp.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-                               paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"), legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5))
+        fig_comp.update_layout(
+            polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            font=dict(color="white"), # Chart font to white
+            legend=dict(
+                font=dict(color="white"), # Legend text to white
+                orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5
+            )
+        )
         st.plotly_chart(fig_comp, use_container_width=True)
     with col_r:
         st.markdown("<p style='text-align:center; color:#00d4ff;'><b>Direct Comparison</b></p>", unsafe_allow_html=True)
@@ -219,5 +241,10 @@ with tab_compare:
             diff = round(p1_data[m] - p2_data[m], 1)
             color = "#3880ff" if diff > 0 else ("#00ff88" if diff < 0 else "white")
             arrow = "→" if diff == 0 else ("↑" if diff > 0 else "↓")
-            comp_data.append({"Metric": m.replace('_',' '), p1_name: int(p1_data[m]) if m in ['Bench', 'Squat'] else p1_data[m], p2_name: int(p2_data[m]) if m in ['Bench', 'Squat'] else p2_data[m], "Gap": f"<span style='color:{color}'>{arrow} {abs(diff)}</span>"})
+            comp_data.append({
+                "Metric": m.replace('_',' '), 
+                p1_name: int(p1_data[m]) if m in ['Bench', 'Squat'] else p1_data[m], 
+                p2_name: int(p2_data[m]) if m in ['Bench', 'Squat'] else p2_data[m], 
+                "Gap": f"<span style='color:{color}'>{arrow} {abs(diff)}</span>"
+            })
         st.markdown(f'<div style="text-align:center;">{pd.DataFrame(comp_data).to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
