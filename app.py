@@ -100,13 +100,8 @@ with tab_indiv:
     player_ranks = team_ranks.loc[selected_player]
     player_pcts = team_percentiles.loc[selected_player]
 
-    # ATHLETICISM SCORE
+    # ATHLETICISM SCORE (Mean of percentiles)
     ath_score = int(player_pcts.mean())
-
-    # STRENGTH TO WEIGHT
-    bw = latest.get('Weight', 1) # Avoid division by zero
-    s_w_bench = round(player_pbs['Bench'] / bw, 2)
-    s_w_squat = round(player_pbs['Squat'] / bw, 2)
 
     st.subheader("Athlete Evaluation")
     col_img, col_info, col_radar = st.columns([1.2, 2.5, 2])
@@ -115,9 +110,9 @@ with tab_indiv:
         current_img_url = p_history[p_history['Image_URL'].notna()].iloc[-1]['Image_URL'] if not p_history[p_history['Image_URL'].notna()].empty else ""
         st.image(get_drive_image(current_img_url), use_container_width=True)
         st.markdown(f"""
-            <div class="metric-box" style="margin-top:10px; border: 2px solid #00d4ff;">
+            <div class="metric-box" style="margin-top:10px; border: 2px solid #3880ff;">
                 <p class="m-label">Athleticism Score</p>
-                <p class="m-value" style="color:#00d4ff;">{ath_score}</p>
+                <p class="m-value" style="color:#ffffff;">{ath_score}</p>
                 <p class="m-sub">Team Percentile</p>
             </div>
         """, unsafe_allow_html=True)
@@ -127,12 +122,12 @@ with tab_indiv:
         st.markdown(f"""
         <div style="margin-left:20px;">
             <p style="font-size: 2.5rem; font-weight: 800; margin: 0;">{selected_player}</p>
-            <p style="font-size: 1.1rem; color: #a0a0a0; margin-bottom:20px;">{latest.get('Position','')} | Ht: {h_str} | Wt: {bw} LBS</p>
+            <p style="font-size: 1.1rem; color: #a0a0a0; margin-bottom:20px;">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight', 'N/A')} LBS</p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{player_pbs['Max_Speed']}</p><p class="m-sub">Rank #{player_ranks['Max_Speed']}</p></div>
                 <div class="metric-box"><p class="m-label">Vertical</p><p class="m-value">{player_pbs['Vertical']}"</p><p class="m-sub">Rank #{player_ranks['Vertical']}</p></div>
-                <div class="metric-box"><p class="m-label">S:W Bench</p><p class="m-value">{s_w_bench}</p><p class="m-sub">Ratio</p></div>
-                <div class="metric-box"><p class="m-label">S:W Squat</p><p class="m-value">{s_w_squat}</p><p class="m-sub">Ratio</p></div>
+                <div class="metric-box"><p class="m-label">Bench PB</p><p class="m-value">{int(player_pbs['Bench'])}</p><p class="m-sub">Rank #{player_ranks['Bench']}</p></div>
+                <div class="metric-box"><p class="m-label">Squat PB</p><p class="m-value">{int(player_pbs['Squat'])}</p><p class="m-sub">Rank #{player_ranks['Squat']}</p></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -146,7 +141,7 @@ with tab_indiv:
             theta=categories,
             fill='toself',
             name=selected_player,
-            line_color='#00d4ff'
+            line_color='#3880ff'
         ))
         fig.update_layout(
             polar=dict(
@@ -206,7 +201,6 @@ with tab_team:
             if m in ['Bench', 'Squat']: top5[clean_name] = top5[clean_name].fillna(0).astype(int)
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-    # UPDATED SUBHEADER HERE
     st.subheader("Positional Averages")
     avg_data = range_pbs.groupby('Position')[metrics_list].mean().reset_index()
     avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
