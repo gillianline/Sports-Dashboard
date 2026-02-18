@@ -70,24 +70,13 @@ st.markdown("""
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* FIX: TABS TO THE TOP LEFT CORNER */
-div[data-baseweb="tabs"] {
-    justify-content: flex-start !important;
-}
-button[data-baseweb="tab"] {
-    padding-left: 0px !important;
-    padding-right: 20px !important;
-}
-button[data-baseweb="tab"] p { 
-    color: #ffffff !important; 
-    font-weight: 600 !important; 
-    font-size: 0.9rem !important; 
-}
-button[data-baseweb="tab"][aria-selected="true"] { 
-    border-bottom-color: #3880ff !important; 
-}
+/* TABS TO THE TOP LEFT CORNER */
+div[data-baseweb="tabs"] { justify-content: flex-start !important; }
+button[data-baseweb="tab"] { padding-left: 0px !important; padding-right: 20px !important; }
+button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 0.9rem !important; }
+button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* DROPDOWN STYLING: High Contrast */
+/* DROPDOWN STYLING: High Contrast White/Dark */
 div[data-baseweb="select"] { background-color: white !important; border-radius: 8px !important; }
 div[data-baseweb="select"] div { color: #0d1117 !important; }
 input[data-baseweb="input"] { color: #0d1117 !important; }
@@ -100,7 +89,6 @@ div[role="option"]:hover { background-color: #3880ff !important; color: white !i
     color: #00d4ff !important; 
     font-weight: bold !important; 
     font-size: 1.1rem !important; 
-    text-align: center !important; 
 }
 
 /* Component Styling */
@@ -121,13 +109,14 @@ div[role="option"]:hover { background-color: #3880ff !important; color: white !i
 st.markdown("<h1 style='letter-spacing:-2px; margin-top:-50px;'>PERFORMANCE CONSOLE</h1>", unsafe_allow_html=True)
 
 # -------------------
-# MAIN TABS (Aligned to Left)
+# MAIN TABS
 # -------------------
-tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL", "TEAM", "H2H"])
+tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL", "TEAM", "HEAD TO HEAD COMPARISON"])
 
 # --- INDIVIDUAL PROFILE ---
 with tab_indiv:
-    _, col_sel, _ = st.columns([1, 1, 1])
+    # MOVE SEARCH TO THE TOP RIGHT
+    _, col_spacer, col_sel = st.columns([1.5, 0.5, 1])
     with col_sel:
         selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
     
@@ -215,7 +204,7 @@ with tab_team:
 
 # --- HEAD-TO-HEAD ---
 with tab_compare:
-    st.subheader("H2H Comparison")
+    st.subheader("Head to Head Comparison")
     _, c1, c2, _ = st.columns([0.5, 1, 1, 0.5])
     with c1: p1_name = st.selectbox("Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
     with c2: p2_name = st.selectbox("Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
