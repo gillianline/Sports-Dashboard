@@ -179,7 +179,7 @@ with tab_team:
             st.markdown(f"<div style='text-align:center'>{top5.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
     # --- AVERAGES ---
-    st.subheader("Team Averages (PB based)")
+    st.subheader("Team Averages")
     avg_data = range_pbs.groupby('Position')[metrics_list].mean().reset_index()
     avg_data['Max_Speed'] = avg_data['Max_Speed'].round(1)
     avg_data['Vertical'] = avg_data['Vertical'].round(1)
