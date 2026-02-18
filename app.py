@@ -66,29 +66,48 @@ st.set_page_config(page_title="Performance Console", layout="wide")
 
 st.markdown("""
 <style>
-/* Global Styling */
+/* 1. Global Background */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
 h1, h2, h3 { text-align: center !important; color: white !important; }
 
-/* FIX: Forces ALL text inside SelectBoxes (Dropdowns) to be White */
-div[data-baseweb="select"] * {
+/* 2. FIX: SELECT BOX (DROPDOWN) VISIBILITY */
+/* Target the text inside the closed select box */
+div[data-baseweb="select"] div {
     color: white !important;
 }
 
-/* Fixes the dropdown list items specifically */
-ul[role="listbox"] li {
+/* Target the placeholder and input text */
+input[data-baseweb="input"] {
+    color: white !important;
+}
+
+/* Target the dropdown menu that pops up */
+div[data-baseweb="menu"] {
+    background-color: #161b22 !important;
+}
+
+/* Target individual items in the dropdown list */
+div[data-baseweb="menu"] li {
     color: white !important;
     background-color: #161b22 !important;
 }
 
-/* Slider and SelectBox Label Colors */
-.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
+/* Change background color when hovering over an item in the list */
+div[data-baseweb="menu"] li:hover {
+    background-color: #3880ff !important;
+}
 
-/* Tabs Styling */
+/* 3. Labels & Tabs */
+.stSelectbox label p, .stSlider label p { color: #00d4ff !important; font-weight: bold !important; font-size: 1.1rem !important; }
 button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
 button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
 
-/* Metric Box Styling */
+/* 4. Focus & Shadows */
+*:focus, *:active, .stSelectbox:focus-within {
+    outline: none !important; box-shadow: none !important;
+}
+
+/* 5. Components */
 .metric-box { 
     background: #161b22; border: 1px solid rgba(255,255,255,0.1); 
     padding: 20px; border-radius: 15px; text-align: center; min-width: 150px; flex: 1; 
@@ -97,7 +116,6 @@ button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff 
 .m-value { font-size: 2rem; font-weight: 700; color: #ffffff; margin: 0; }
 .m-sub { font-size: 0.8rem; color: #a0a0a0; margin-top: 5px; }
 
-/* Table Styling */
 .vibe-table { color: #ffffff; width:100%; border-collapse: collapse; margin: 20px auto; }
 .vibe-table th { color: #00d4ff; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 12px; text-align: center; background-color: #1b1f27; }
 .vibe-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -134,7 +152,7 @@ with tab_indiv:
         h_str = inches_to_feet(latest.get('Height', ""))
         st.markdown(f"""
         <div style="margin-left:20px;">
-            <p style="font-size: 2.5rem; font-weight: 800; margin: 0;">{selected_player}</p>
+            <p style="font-size: 2.5rem; font-weight: 800; margin: 0; color: white;">{selected_player}</p>
             <p style="font-size: 1.1rem; color: #a0a0a0; margin-bottom:20px;">{latest.get('Position','')} | Ht: {h_str} | Wt: {latest.get('Weight', 'N/A')} LBS</p>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="metric-box"><p class="m-label">Max Speed</p><p class="m-value">{p_data['Max_Speed']}</p><p class="m-sub">Rank #{p_rank_row['Max_Speed']}</p></div>
@@ -149,7 +167,10 @@ with tab_indiv:
         categories = ['Max Speed', 'Vertical', 'Bench', 'Squat']
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(r=p_pct_row.values, theta=categories, fill='toself', name=selected_player, line_color='#3880ff'))
-        fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='rgba(255,255,255,0.1)')), showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(l=40, r=40, t=40, b=40))
+        fig.update_layout(
+            polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='rgba(255,255,255,0.1)')),
+            showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(l=40, r=40, t=40, b=40), font=dict(color="white")
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Recent Evaluation History")
@@ -159,8 +180,7 @@ with tab_indiv:
         new_col = []
         for i in range(len(vals)):
             curr_display = int(vals[i]) if (m in ['Bench', 'Squat'] and pd.notna(vals[i])) else vals[i]
-            if i == 0: 
-                new_col.append(f"{curr_display} –")
+            if i == 0: new_col.append(f"{curr_display} –")
             else:
                 color = "#00ff88" if vals[i] > vals[i-1] else "#ff4b4b"
                 arrow = "↑" if vals[i] > vals[i-1] else ("↓" if vals[i] < vals[i-1] else "–")
@@ -203,10 +223,8 @@ with tab_team:
     avg_data['Bench'] = avg_data['Bench'].fillna(0).astype(int)
     avg_data['Squat'] = avg_data['Squat'].fillna(0).astype(int)
     avg_display = avg_data.rename(columns={'Max_Speed': 'Max Speed'})
-
     if selected_pos != "All Positions":
         avg_display = avg_display[avg_display['Position'] == selected_pos].drop(columns=['Position'])
-    
     st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
 # --- HEAD-TO-HEAD ---
@@ -231,8 +249,7 @@ with tab_compare:
         fig_comp.add_trace(go.Scatterpolar(r=p2_pct.values, theta=categories, fill='toself', name=p2_name, line_color='#00ff88'))
         fig_comp.update_layout(
             polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-            paper_bgcolor='rgba(0,0,0,0)', 
-            font=dict(color="white"),
+            paper_bgcolor='rgba(0,0,0,0)', font=dict(color="white"),
             legend=dict(font=dict(color="white"), orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
         )
         st.plotly_chart(fig_comp, use_container_width=True)
@@ -243,10 +260,5 @@ with tab_compare:
             diff = round(p1_data[m] - p2_data[m], 1)
             color = "#3880ff" if diff > 0 else ("#00ff88" if diff < 0 else "white")
             arrow = "→" if diff == 0 else ("↑" if diff > 0 else "↓")
-            comp_data.append({
-                "Metric": m.replace('_',' '), 
-                p1_name: int(p1_data[m]) if m in ['Bench', 'Squat'] else p1_data[m], 
-                p2_name: int(p2_data[m]) if m in ['Bench', 'Squat'] else p2_data[m], 
-                "Gap": f"<span style='color:{color}'>{arrow} {abs(diff)}</span>"
-            })
+            comp_data.append({"Metric": m.replace('_',' '), p1_name: int(p1_data[m]) if m in ['Bench', 'Squat'] else p1_data[m], p2_name: int(p2_data[m]) if m in ['Bench', 'Squat'] else p2_data[m], "Gap": f"<span style='color:{color}'>{arrow} {abs(diff)}</span>"})
         st.markdown(f'<div style="text-align:center;">{pd.DataFrame(comp_data).to_html(classes="vibe-table", escape=False, index=False, border=0)}</div>', unsafe_allow_html=True)
