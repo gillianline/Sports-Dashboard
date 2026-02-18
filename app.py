@@ -68,13 +68,30 @@ st.markdown("""
 <style>
 /* Global App Background */
 .stApp { background-color: #0d1117; color: #ffffff; font-family: 'Arial', sans-serif; }
-h1, h2, h3 { text-align: center !important; color: white !important; }
+h1, h2, h3 { text-align: center !important; color: white !important; padding-top: 10px; }
 
-/* TABS CENTERED */
-div[data-baseweb="tabs"] { justify-content: center !important; }
-button[data-baseweb="tab"] { padding: 10px 30px !important; }
-button[data-baseweb="tab"] p { color: #ffffff !important; font-weight: 600 !important; font-size: 1rem !important; }
-button[data-baseweb="tab"][aria-selected="true"] { border-bottom-color: #3880ff !important; }
+/* STRICT TAB CENTERING */
+div[data-baseweb="tabs"] {
+    display: flex !important;
+    justify-content: center !important;
+}
+div[role="tablist"] {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+button[data-baseweb="tab"] {
+    padding: 10px 40px !important;
+}
+button[data-baseweb="tab"] p { 
+    color: #ffffff !important; 
+    font-weight: 600 !important; 
+    font-size: 1.1rem !important; 
+}
+button[data-baseweb="tab"][aria-selected="true"] { 
+    border-bottom: 3px solid #3880ff !important; 
+}
 
 /* DROPDOWN STYLING: High Contrast White/Dark */
 div[data-baseweb="select"] { background-color: white !important; border-radius: 8px !important; }
@@ -89,6 +106,7 @@ div[role="option"]:hover { background-color: #3880ff !important; color: white !i
     color: #00d4ff !important; 
     font-weight: bold !important; 
     font-size: 1.1rem !important; 
+    text-align: center !important;
 }
 
 /* Component Styling */
@@ -115,8 +133,8 @@ tab_indiv, tab_team, tab_compare = st.tabs(["INDIVIDUAL", "TEAM", "HEAD TO HEAD"
 
 # --- INDIVIDUAL PROFILE ---
 with tab_indiv:
-    # SEARCH BAR ON LEFT (constrained width)
-    col_sel, _ = st.columns([1, 2])
+    # Centered Search
+    _, col_sel, _ = st.columns([1, 1, 1])
     with col_sel:
         selected_player = st.selectbox("Search Athlete", sorted(df_phys['Player'].unique()), key="sb_indiv")
     
@@ -152,7 +170,7 @@ with tab_indiv:
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(r=p_pct_row.values, theta=categories, fill='toself', name=selected_player, line_color='#3880ff'))
         fig.update_layout(polar=dict(bgcolor='#0d1117', radialaxis=dict(visible=True, range=[0, 100], color='white')), 
-                         showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350)
+                         showlegend=False, paper_bgcolor='rgba(0,0,0,0)', height=350, margin=dict(t=50))
         st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Recent Evaluation History")
@@ -202,11 +220,10 @@ with tab_team:
     if selected_pos != "All Positions": avg_display = avg_display.drop(columns=['Position'])
     st.markdown(f"<div style='text-align:center'>{avg_display.to_html(classes='vibe-table', index=False, border=0)}</div>", unsafe_allow_html=True)
 
-# --- HEAD-TO-HEAD ---
+# --- HEAD TO HEAD ---
 with tab_compare:
     st.subheader("Head to Head Comparison")
-    # SEARCH BARS ON LEFT
-    c1, c2, _ = st.columns([1, 1, 1])
+    _, c1, c2, _ = st.columns([0.5, 1, 1, 0.5])
     with c1: p1_name = st.selectbox("Athlete 1", team_pbs['Player'].values, index=0, key="comp_1")
     with c2: p2_name = st.selectbox("Athlete 2", team_pbs['Player'].values, index=1, key="comp_2")
     
