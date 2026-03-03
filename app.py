@@ -22,18 +22,7 @@ def check_password():
         st.error("Password incorrect")
         return False
     return True
-    
-    if "password_correct" not in st.session_state:
-        st.markdown("<h2 style='text-align: center;'>Performance Console Login</h2>", unsafe_allow_html=True)
-        st.text_input("Enter Password", type="password", on_change=password_entered, key="password")
-        return False
-    elif not st.session_state["password_correct"]:
-        st.markdown("<h2 style='text-align: center;'>Performance Console Login</h2>", unsafe_allow_html=True)
-        st.text_input("Enter Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 Password incorrect")
-        return False
-    else:
-        return True
+
 
 # Only run the app if password is correct
 if check_password():
